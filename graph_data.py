@@ -1,6 +1,7 @@
 import mplfinance as mpf
 from stock import Stock
 from optimize_levels import optimize_levels
+import pandas as pd
 
 """Graph Kernel Density: can be used for relative strength indicator...
     true trend indicator may be of better use"""
@@ -18,11 +19,13 @@ from optimize_levels import optimize_levels
 # k_density('TSLA')
 
 
-def graphData(stonk):
-    stock = Stock(stonk)
-    weekly_lines = optimize_levels(stock.charts['1wk'])
-    daily_lines = optimize_levels(stock.charts['1d'], weekly_lines)
-    hourly_lines = optimize_levels(stock.charts['1h'], weekly_lines)
-    lines = list(hourly_lines.values())
+# def graphData(stonk):
+#     stock = Stock(stonk)
+#     hourly_lines = optimize_levels(stock.charts['1h'])
+#     weekly_lines = optimize_levels(stock.charts['1wk'], hourly_lines)
+#     lines = list(weekly_lines.values())
+#
+#     mpf.plot(stock.charts['1d'].getData(), mav=(7, 14), hlines=lines, type='candle', style='yahoo')
+#
+# graphData("TSLA")
 
-    mpf.plot(stock.charts['1d'].getData(), mav=(7, 14), hlines=lines, type='candle', style='yahoo')

@@ -50,18 +50,21 @@ class Chart:
 
         self.levels = self.getLevels()
 
+        self.mavs = {}
+        mav_n_s = [2, 7, 21, 35]
+        mavs = self.getMAVs(mav_n_s)
+        for i in range(len(mav_n_s)):
+            self.mavs[mav_n_s[i]] = mavs[i]
+
     def getMAVs(self, n):
         y = []
-        if type(n) == int:
-            for i, close in enumerate(self.closes):
-                if not i < n:
-                    y.append(sum([close[z] for z in range(len(n))]) / n)
-        elif type(n) == list:
-            for mav in n:
-                mav = []
-                for i, close in enumerate(self.closes):
-                    if not i < n:
-                        y.append(sum([close[z] for z in range(len(n))]) / n)
+        for mav in n:
+            data = []
+            for i in range(len(self.closes)):
+                if i > mav:
+                    data.append(sum([self.closes[z] for z in range(i-mav, i)]) / mav)
+            y.append(data)
+        return y
 
     def getLevels(self):
 
