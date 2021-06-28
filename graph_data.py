@@ -1,14 +1,13 @@
 import mplfinance as mpf
-from stock import Stock, Chart
+from stock import Stock
 from optimize_levels import optimize_levels
+import pandas as pd
 
 """Graph Kernel Density: can be used for relative strength indicator...
     true trend indicator may be of better use"""
 # from scipy.stats import kde
 # import matplotlib.pyplot as plt
 # import numpy as np
-
-#
 # def k_density(stonk):
 #     stock = Stock(stonk)
 #     closes = list(stock.charts['1h'].closes)
@@ -17,26 +16,16 @@ from optimize_levels import optimize_levels
 #     plt.plot(xgrid, kdensity(xgrid))
 #     plt.show()
 #
-#
 # k_density('TSLA')
 
 
-def graphData(stonk):
-    stock = Stock(stonk)
-    weekly_lines = optimize_levels(stock.charts['1wk'])
-    daily_lines = optimize_levels(stock.charts['1d'], weekly_lines)
-    hourly_lines = optimize_levels(stock.charts['1h'], weekly_lines)
-    lines = list(hourly_lines.values())
-
-    mpf.plot(stock.charts['1d'].getData(), mav=(2, 7, 21, 35), hlines=lines, type='candle', style='yahoo')
-
-
-graphData('CNI')
-
+# def graphData(stonk):
+#     stock = Stock(stonk)
+#     hourly_lines = optimize_levels(stock.charts['1h'])
+#     weekly_lines = optimize_levels(stock.charts['1wk'], hourly_lines)
+#     lines = list(weekly_lines.values())
 #
-# def colour_meter(chart: Chart) -> [float]:
-#     slopes = []
-#     for day in range(1, len(chart.dates)):
-#         slope = chart.closes[day] - chart.closes[day - 1]
-#         slopes.append(slope)
-#     min_slope, max_slope = min(slopes), max(slopes)
+#     mpf.plot(stock.charts['1d'].getData(), mav=(7, 14), hlines=lines, type='candle', style='yahoo')
+#
+# graphData("TSLA")
+

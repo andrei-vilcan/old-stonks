@@ -30,6 +30,7 @@ class Stock:
         return self.charts['1h'].current_price
 
 
+
 class Chart:
 
     def __init__(self, ticker, period, timeframe):
@@ -55,12 +56,15 @@ class Chart:
         for i in range(len(mav_n_s)):
             self.mavs[mav_n_s[i]] = mavs[i]
 
-    def getMAVs(self, n: list) -> list:
+    def getMAVs(self, n):
         y = []
         for mav in n:
-            for i, close in enumerate(self.closes):
-                if not i < n:
-                    y.append(sum([close[z] for z in range(len(n))]) / n)
+            data = []
+            for i in range(len(self.closes)):
+                if i > mav:
+                    data.append(sum([self.closes[z] for z in range(i-mav, i)]) / mav)
+            y.append(data)
+        return y
 
     def getLevels(self):
 
