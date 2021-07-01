@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from stock import Stock
 
 stock = Stock('TSLA')
-data = list(stock.charts['1h'].closes)
+data = list(stock.charts['1d'].closes)
 
 plt.figure(figsize=(8,8))
 fig, axs = plt.subplots(2)

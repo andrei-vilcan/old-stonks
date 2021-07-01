@@ -23,9 +23,10 @@ def graphData(stonk):
     stock = Stock(stonk)
     hourly_lines = optimize_levels(stock.charts['1h'])
     weekly_lines = optimize_levels(stock.charts['1wk'], hourly_lines)
-    lines = list(weekly_lines.values())
+    h_lines = list(weekly_lines.values())
+    v_lines = [1, 2, 3]
 
-    mpf.plot(stock.charts['1d'].getData(), mav=(7, 14), hlines=lines, type='candle', style='yahoo')
+    mpf.plot(stock.charts['1d'].getData(), mav=(7, 14), hlines=h_lines, vlines=v_lines, type='candle', style='yahoo')
+
 
 graphData("TSLA")
-

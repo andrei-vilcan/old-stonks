@@ -1,6 +1,7 @@
 from candle import Candle
 from get_data import get_data
-from optimize_levels import optimize_levels
+
+import matplotlib.pyplot as plt
 
 
 class Stock:
@@ -156,13 +157,22 @@ class Chart:
 
         return y, dy, ddy
 
-    def colour_meter(self) -> [float]:
-        values = []
-        for day in range(35, len(self.dates)):
-            # garbage
-            value = 0.5
-            values.append(value)
-        return values
+    # TODO
+    # def buy_sell_scale(self) -> [float]:
+
+    def buy_lines(self):
+        buy = []
+        sell = []
+        margin = 0.05
+        for i in range(35, len(self.dates)):
+            # if flat
+            if 0 - margin <= self.mav_dy[2][i] <= 0 + margin:
+                # if up
+                if self.mav_ddy[2][i] > 0:
+                    buy.append(i)
+                else:
+                    sell.append(i)
+        return buy, sell
 
     def getLevels(self):
 
@@ -227,4 +237,10 @@ class Chart:
             return get_data(self.ticker, self.period, timeframe).dropna()
 
 
-nvda = Stock('NVDA')
+nvidia = Stock('NVDA')
+tesla = Stock('TSLA')
+
+y = list(tesla.charts['1d'].closes)
+x = [i for i in range(len(y))]
+
+
