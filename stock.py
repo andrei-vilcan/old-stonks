@@ -48,6 +48,8 @@ class Chart:
         self.ticker = ticker
         self.period = period
         self.timeframe = timeframe
+        self.value = default_value()
+
 
         data = self.getData()
         self.dates = data.index.tolist()
@@ -68,6 +70,18 @@ class Chart:
         self.mav_ddy = {}
         self.update_mavs()
 
+        self.ratings = self.rate()
+
+    def default_value(self, ticker):
+        if self.ticker == '1h':
+            value = 3
+        elif self.ticker == '1d':
+            value =
+        elif self.ticker == '1wk':
+            value =
+        else:
+            value = 0
+        return value
     # TODO
     def update(self):
         pass
@@ -235,7 +249,6 @@ class Chart:
             return get_data(self.ticker, self.period, self.timeframe).dropna()
         else:
             return get_data(self.ticker, self.period, timeframe).dropna()
-
 
 nvidia = Stock('NVDA')
 tesla = Stock('TSLA')
