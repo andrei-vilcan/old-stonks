@@ -26,7 +26,9 @@ class Stock:
         return self.charts
 
     # TODO
-    # def update(self):
+    def update(self):
+        for chart in self.charts.values:
+            chart.update()
 
     def add_time_frame(self, time_frame_s):
         if time_frame_s.isinstance(str):
@@ -66,8 +68,32 @@ class Chart:
         self.update_mavs()
 
     # TODO
-    # def update(self):
-    #
+    def update(self):
+
+
+
+    # def update_candles(self):
+    #     count_new_candles = 0
+    #     data = get_data(self.ticker, , self.interval_length)
+    #     for i in range(len(data[0])):
+    #         flag = False
+    #         # flag = (candle is in self.candles)
+    #         for j in range(len(self.candles)):
+    #             if data[0][i] == self.candles[j].date:
+    #                 flag = True
+    #                 break
+    #         if not flag:
+    #             if data[2][i] > self.candles[-1]:
+    #                 self.candles.append(Candle(data[0][i], data[1][i], data[2][i], data[3][i])
+    #                 count_new_candles += 1
+    #             else:
+    #                 self.candles.append(Candle()
+    #                 count_new_candles += 1
+    #         if flag:
+    #             pass
+    #         return count_new_candles
+
+
 
     def update_mavs(self):
         mav_n_s = [2, 7, 21, 35]
@@ -189,28 +215,6 @@ class Chart:
             return get_data(self.ticker, self.period, self.timeframe).dropna()
         else:
             return get_data(self.ticker, self.period, timeframe).dropna()
-
-
-    # def update_candles(self):
-    #     count_new_candles = 0
-    #     data = get_data(self.ticker, , self.interval_length)
-    #     for i in range(len(data[0])):
-    #         flag = False
-    #         # flag = (candle is in self.candles)
-    #         for j in range(len(self.candles)):
-    #             if data[0][i] == self.candles[j].date:
-    #                 flag = True
-    #                 break
-    #         if not flag:
-    #             if data[2][i] > self.candles[-1]:
-    #                 self.candles.append(Candle(data[0][i], data[1][i], data[2][i], data[3][i])
-    #                 count_new_candles += 1
-    #             else:
-    #                 self.candles.append(Candle()
-    #                 count_new_candles += 1
-    #         if flag:
-    #             pass
-    #         return count_new_candles
 
 
 nvda = Stock('NVDA')
