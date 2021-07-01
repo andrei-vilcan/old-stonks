@@ -67,6 +67,7 @@ class Chart:
         self.mav_ddy = {}
         self.update_mavs()
 
+
     # TODO
     def update(self):
         pass
@@ -156,8 +157,13 @@ class Chart:
         return y, dy, ddy
 
     # TODO
-    # combine buy_scale and buy_lines
-    def buy_scale(self):
+    def combined_scales(self, n):
+        scale = []
+        for i in range(len(self.ma_scale(n))):
+            scale.append(1 * self.horizontal_scale()[i] + 2 * self.ma_scale(n)[i])
+        return scale
+
+    def horizontal_scale(self):
         """Matt's method"""
         scale = []
         levels = list(optimize_levels(self).values())
@@ -173,6 +179,15 @@ class Chart:
             level = (self.candles[i].close - support) / (resistance - support)
             scale.append(level)
         return scale
+
+    def ma_scale(self, n):
+        ma = self.mav_y[n]
+        scale = []
+        for i in range(n, len(self.candles)):
+            value = (self.candles[i].close - ma[i]) / self.candles[i].close
+            scale.append(value)
+        return scale
+
 
     def buy_lines(self, n):
         """Andrei's method"""
