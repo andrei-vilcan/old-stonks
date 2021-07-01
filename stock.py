@@ -95,7 +95,7 @@ class Chart:
     #         return count_new_candles
 
     def update_mavs(self):
-        mav_n_s = [2, 7, 21, 35]
+        mav_n_s = [2, 7, 14, 21, 35]
         y, dy, ddy = self.get_mavs(mav_n_s)
         for i in range(len(mav_n_s)):
             self.mav_y[mav_n_s[i]] = y[i]
@@ -160,15 +160,15 @@ class Chart:
     # TODO
     # def buy_sell_scale(self) -> [float]:
 
-    def buy_lines(self):
+    def buy_lines(self, n):
         buy = []
         sell = []
-        margin = 0.05
-        for i in range(35, len(self.dates)):
+        margin = 0.2
+        for i in range(n, len(self.dates)):
             # if flat
-            if 0 - margin <= self.mav_dy[2][i] <= 0 + margin:
+            if 0 - margin <= self.mav_dy[n][i] <= 0 + margin:
                 # if up
-                if self.mav_ddy[2][i] > 0:
+                if self.mav_ddy[n][i] > 0:
                     buy.append(i)
                 else:
                     sell.append(i)
@@ -236,11 +236,11 @@ class Chart:
         else:
             return get_data(self.ticker, self.period, timeframe).dropna()
 
-
-nvidia = Stock('NVDA')
-tesla = Stock('TSLA')
-
-y = list(tesla.charts['1d'].closes)
-x = [i for i in range(len(y))]
+#
+# nvidia = Stock('NVDA')
+# tesla = Stock('TSLA')
+#
+# y = list(tesla.charts['1d'].closes)
+# x = [i for i in range(len(y))]
 
 

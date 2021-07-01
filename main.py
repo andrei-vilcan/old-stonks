@@ -6,7 +6,7 @@ stocks = []
 
 """Remove '$' from tickers, add to stocks"""
 for k,v in tickers.items():
-    if v > 3 and '$' in str(k):
+    if v > 4 and '$' in str(k):
         stocks.append(k.replace('$',''))
 
 setups = []
