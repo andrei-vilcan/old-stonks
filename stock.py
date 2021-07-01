@@ -194,11 +194,12 @@ class Chart:
     # TODO
     # def evaluate(self) -> [float]:
 
-    def buy_lines(self, n, margin):
-        buy = [0]
-        sell = [0]
-        # margin = 0.6
-        for i in range(n + 3, len(self.dates) - 1):
+
+    def buy_lines(self, n):
+        buy = []
+        sell = []
+        margin = 0.2
+        for i in range(n, len(self.dates)):
             # if flat
             if 0 - margin <= self.mav_dy[n][i] <= 0 + margin:
                 # if up

@@ -12,7 +12,6 @@ data = list(stock.charts['1d'].closes)
 #     mav = stock.charts['1d'].mav_y[n]
 #     return mav
 
-
 # """Setup First derivative for graph"""
 # def get_first_derivative(mav):
 #     mav_first_derivative = []
@@ -21,7 +20,6 @@ data = list(stock.charts['1d'].closes)
 #             mav_first_derivative.append(mav[i] - mav[i - 1])
 #     # zeros.extend(mav_first_derivative)
 #     return mav_first_derivative
-
 
 # """Find first derivative == 0, e.g. indexes when first dev goes from -ve to +ve"""
 # def get_zeros(mavs: list):
