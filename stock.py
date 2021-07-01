@@ -1,8 +1,11 @@
 from candle import Candle
 from get_data import get_data
 import math as m
+from optimize_levels import optimize_levels
 
 import matplotlib.pyplot as plt
+
+mav_n_s = [2, 7, 14, 21, 35]
 
 
 def chart_weight_formula(self, bias):
@@ -20,7 +23,7 @@ def chart_weight_formula(self, bias):
 class Stock:
 
     def __init__(self, ticker: str):
-        self.period = '300d'
+        self.period = '370d'
         self.ticker = ticker
         self.charts = {}
         self.timeframes = ['1h', '1d', '1wk']
@@ -37,14 +40,21 @@ class Stock:
     def ticker(self):
         return self.ticker
 
-    def charts(self):
-        return self.charts
+    def charts(self, time_frame):
+        # if time_frame:
+        #     return self.charts
+        # else:
+        if time_frame == '1h':
+            return self.charts['1d']
+        if time_frame == '1d':
+            return self.charts['1d']
+        elif time_frame == '1wk':
+            return self.charts['1wk']
 
     # TODO
-    def update(self):
-        for time_frame in self.timeframes:
-            z = self.charts()
-
+    # def update(self):
+    #     for time_frame in self.timeframes:
+    #         z = self.charts()
 
     def add_time_frame(self, time_frame_s):
         if time_frame_s.isinstance(str):
@@ -85,25 +95,19 @@ class Chart:
         self.mav_ddy = {}
         self.update_mavs()
 
-        self.value = self.evaluate()
+        # self.value = self.evaluate()
 
-    def default_weight(self, bias):
-        if self.ticker == '1h':
-            weight = 1 + bias
-        elif self.ticker == '1d':
-            weight = 24 + bias
-        elif self.ticker == '1wk':
-            weight = 168 + bias
+    def getData(self, timeframe=None):
+        if timeframe is None:
+            return get_data(self.ticker, self.period, self.timeframe).dropna()
         else:
-            weight = 0
-        return weight
+            return get_data(self.ticker, self.period, timeframe).dropna()
 
-    # update
-    # TODO
     # def update(self):
-    #     count_new_candles = []
-    #     data - get_data(self.ticker)
-
+    #     count_new_candles = 0
+    #     data = self.getData()
+    #     for i in range(len(data[0])):
+    #         flag = False
 
     # def update_candles(self):
     #     count_new_candles = 0
@@ -126,8 +130,63 @@ class Chart:
     #             pass
     #         return count_new_candles
 
+    def getLevels(self):
+
+        """Look for two different chart patterns to define support/resistance"""
+        # def isSupport(i):
+        #     support = self.candles[i - 1].close - self.candles[i - 1].open < 0 and self.candles[i].close - self.candles[
+        #         i].open >= 0
+        #     return support
+        #
+        # def isResistance(i):
+        #     resistance = self.candles[i - 1].close - self.candles[i - 1].open >= 0 and self.candles[i].close - \
+        #                  self.candles[i].open < 0
+        #     return resistance
+
+        def isSupport(i):
+            return self.candles[i - 1].close < self.candles[i].close < self.candles[i - 1].open
+            # return self.candles[i].close > self.candles[i-1].close and self.candles[i-1].open > self.candles[i].close
+
+        def isResistance(i):
+            return self.candles[i - 1].close > self.candles[i].close > self.candles[i - 1].open
+            # return self.candles[i].close < self.candles[i-1].close and self.candles[i-1].open < self.candles[i].close
+
+        # def isSupport(i):
+        #     support = self.candles[i].close > self.candles[i - 2].high \
+        #               and self.candles[i - 2].close > self.candles[i - 1].close > self.candles[i - 2].open \
+        #               or self.candles[i].low < self.candles[i - 1].low < self.candles[i - 2].low \
+        #               and self.candles[i].low < self.candles[i + 1].low < self.candles[i + 2].low
+        #     return support
+        #
+        # def isResistance(i):
+        #     resistance = self.candles[i].close < self.candles[i - 1].close < self.candles[i - 2].close < self.candles[
+        #         i - 1].close \
+        #                  or self.candles[i].high > self.candles[i - 1].high > self.candles[i - 2].high \
+        #                  and self.candles[i].high > self.candles[i + 1].high > self.candles[i + 2].high
+        #     return resistance
+
+        """
+        Use getSup()/Res() to find levels in the chart
+        store levels as { dates: price(level) }
+        """
+        levels = {}
+        # +/- 2 range as isResistance/Support uses up to [+/- 2 indexing],
+        # can probably reduce to 1 as only the commented out one needs 2
+        for i in range(1, len(self.candles) - 1):
+            if isSupport(i):
+                if self.candles[i].open < self.candles[i - 1].close:
+                    levels[self.candles[i].date] = self.candles[i].open
+                else:
+                    levels[self.candles[i - 1].date] = self.candles[i - 1].close
+            elif isResistance(i):
+                if self.candles[i].open > self.candles[i - 1].close:
+                    levels[self.candles[i].date] = self.candles[i].open
+                else:
+                    levels[self.candles[i - 1].date] = self.candles[i - 1].close
+
+        return levels
+
     def update_mavs(self):
-        mav_n_s = [2, 7, 14, 21, 35]
         y, dy, ddy = self.get_mavs(mav_n_s)
         for i in range(len(mav_n_s)):
             self.mav_y[mav_n_s[i]] = y[i]
@@ -191,15 +250,10 @@ class Chart:
 
         return y, dy, ddy
 
-    # TODO
-    # def evaluate(self) -> [float]:
-
-
-    def buy_lines(self, n):
+    def buy_n_sell_lines(self, n, margin):
         buy = []
         sell = []
-        margin = 0.2
-        for i in range(n, len(self.dates)):
+        for i in range(n + 4, len(self.dates) - 1):
             # if flat
             if 0 - margin <= self.mav_dy[n][i] <= 0 + margin:
                 # if up
@@ -209,73 +263,23 @@ class Chart:
                     sell.append(i)
         return buy, sell
 
-    def getLevels(self):
+    # def evaluate(self):
+    #
 
-        """Look for two different chart patterns to define support/resistance"""
-        # def isSupport(i):
-        #     support = self.candles[i - 1].close - self.candles[i - 1].open < 0 and self.candles[i].close - self.candles[
-        #         i].open >= 0
-        #     return support
-        #
-        # def isResistance(i):
-        #     resistance = self.candles[i - 1].close - self.candles[i - 1].open >= 0 and self.candles[i].close - \
-        #                  self.candles[i].open < 0
-        #     return resistance
-
-        def isSupport(i):
-            return self.candles[i - 1].close < self.candles[i].close < self.candles[i - 1].open
-            # return self.candles[i].close > self.candles[i-1].close and self.candles[i-1].open > self.candles[i].close
-
-        def isResistance(i):
-            return self.candles[i - 1].close > self.candles[i].close > self.candles[i - 1].open
-            # return self.candles[i].close < self.candles[i-1].close and self.candles[i-1].open < self.candles[i].close
-
-        # def isSupport(i):
-        #     support = self.candles[i].close > self.candles[i - 2].high \
-        #               and self.candles[i - 2].close > self.candles[i - 1].close > self.candles[i - 2].open \
-        #               or self.candles[i].low < self.candles[i - 1].low < self.candles[i - 2].low \
-        #               and self.candles[i].low < self.candles[i + 1].low < self.candles[i + 2].low
-        #     return support
-        #
-        # def isResistance(i):
-        #     resistance = self.candles[i].close < self.candles[i - 1].close < self.candles[i - 2].close < self.candles[
-        #         i - 1].close \
-        #                  or self.candles[i].high > self.candles[i - 1].high > self.candles[i - 2].high \
-        #                  and self.candles[i].high > self.candles[i + 1].high > self.candles[i + 2].high
-        #     return resistance
-
-        """
-        Use getSup()/Res() to find levels in the chart
-        store levels as { dates: price(level) }
-        """
-        levels = {}
-        # +/- 2 range as isResistance/Support uses up to [+/- 2 indexing],
-        # can probably reduce to 1 as only the commented out one needs 2
-        for i in range(1, len(self.candles) - 1):
-            if isSupport(i):
-                if self.candles[i].open < self.candles[i - 1].close:
-                    levels[self.candles[i].date] = self.candles[i].open
-                else:
-                    levels[self.candles[i - 1].date] = self.candles[i - 1].close
-            elif isResistance(i):
-                if self.candles[i].open > self.candles[i - 1].close:
-                    levels[self.candles[i].date] = self.candles[i].open
-                else:
-                    levels[self.candles[i - 1].date] = self.candles[i - 1].close
-
-        return levels
-
-    def evaluate(self):
-        return 0
-
-    def getData(self, timeframe=None):
-        if timeframe is None:
-            return get_data(self.ticker, self.period, self.timeframe).dropna()
+    def default_weight(self, bias):
+        if self.ticker == '1h':
+            weight = 1 + bias
+        elif self.ticker == '1d':
+            weight = 24 + bias
+        elif self.ticker == '1wk':
+            weight = 168 + bias
         else:
-            return get_data(self.ticker, self.period, timeframe).dropna()
+            weight = 0
+        return weight
 
+    # def closest_lines(self, price: float):
+    #     closest_below = 0
+    #     closest_above = 0
+    #     for line in optimize_levels(self).values():
+    #         if line <= price:
 
-# nvidia = Stock('NVDA')
-# tesla = Stock('TSLA')
-#
-# stocks = {'TSLA': tesla, 'NVDA': nvidia}
