@@ -59,7 +59,7 @@ def optimize_levels(chart, merge_levels=None):
         end_date = list(cluster.keys())[-1]
 
         # if there are closes within the cluster that exceed range, add the extremes as lines
-        for candle in candles:  # WAS SELF.CCANDLES
+        for candle in candles:  # WAS SELF.CANDLES
             if start_date.timestamp() < candle.date.timestamp() < end_date.timestamp():
                 if candle.close > max_level or candle.open > max_level:
                     if candle.open > candle.close:

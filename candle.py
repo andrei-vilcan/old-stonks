@@ -13,7 +13,6 @@ class Candle:
     open: float
     close: float
     difference: float
-    colour: str
     high: float
     low: float
 
@@ -23,6 +22,7 @@ class Candle:
         self.close = close
         self.high = high
         self.low = low
+        self.difference = self.close - self.open
 
     def date(self):
         return self.date
