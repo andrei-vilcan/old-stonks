@@ -19,13 +19,13 @@ import pandas as pd
 # k_density('TSLA')
 
 
-# def graphData(stonk):
-#     stock = Stock(stonk)
-#     hourly_lines = optimize_levels(stock.charts['1h'])
-#     weekly_lines = optimize_levels(stock.charts['1wk'], hourly_lines)
-#     lines = list(weekly_lines.values())
-#
-#     mpf.plot(stock.charts['1d'].getData(), mav=(7, 14), hlines=lines, type='candle', style='yahoo')
-#
-# graphData("TSLA")
+def graphData(stonk):
+    stock = Stock(stonk)
+    hourly_lines = optimize_levels(stock.charts['1h'])
+    weekly_lines = optimize_levels(stock.charts['1wk'], hourly_lines)
+    lines = list(weekly_lines.values())
+
+    mpf.plot(stock.charts['1d'].getData(), mav=(7, 14), hlines=lines, type='candle', style='yahoo')
+
+graphData("TSLA")
 

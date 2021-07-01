@@ -8,13 +8,12 @@ class Stock:
     def __init__(self, ticker: str):
         self.period = '300d'
         self.ticker = ticker
-        self.timeframes = ['1h', '1d', '1wk']
         self.charts = {}
         """
         Charts store daily candles, and lines
         - add moving averages and any other ideas for indicator creation
         """
-        for timeframe in self.timeframes:
+        for timeframe in ['1h', '1d', '1wk']:
             self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
 
         """Obtain optimized levels"""
@@ -23,12 +22,21 @@ class Stock:
     def ticker(self):
         return self.ticker
 
-    def timeframes(self):
-        return self.timeframes
+    def charts(self):
+        return self.charts
+
+    # TODO
+    # def update(self):
+
+    def add_time_frame(self, time_frame_s):
+        if time_frame_s.isinstance(str):
+            self.charts[time_frame_s] = Chart(self.ticker, self.period, time_frame_s)
+        else:
+            for thing in time_frame_s:
+                self.charts[thing] = Chart(self.ticker, self.period, thing)
 
     def price(self):
         return self.charts['1h'].current_price
-
 
 
 class Chart:
@@ -37,34 +45,88 @@ class Chart:
         self.ticker = ticker
         self.period = period
         self.timeframe = timeframe
-        self.data = self.getData()
-        self.dates = self.data.index.tolist()
-        self.opens = self.data['Open']
-        self.closes = self.data['Close']
-        self.highs = self.data['High']
-        self.lows = self.data['Low']
+
+        data = self.getData()
+        self.dates = data.index.tolist()
+        self.opens = data['Open']
+        self.closes = data['Close']
+        self.highs = data['High']
+        self.lows = data['Low']
         self.current_price = self.closes[-1]
+
         self.candles = []
         for i in range(len(self.dates)):
             self.candles.append(Candle(self.dates[i], self.opens[i], self.closes[i], self.highs[i], self.lows[i]))
 
         self.levels = self.getLevels()
 
-        self.mavs = {}
-        mav_n_s = [2, 7, 21, 35]
-        mavs = self.getMAVs(mav_n_s)
-        for i in range(len(mav_n_s)):
-            self.mavs[mav_n_s[i]] = mavs[i]
+        self.mav_y = {}
+        self.mav_dy = {}
+        self.mav_ddy = {}
+        self.update_mavs()
 
-    def getMAVs(self, n):
+    # TODO
+    # def update(self):
+    #
+
+    def update_mavs(self):
+        mav_n_s = [2, 7, 21, 35]
+        y, dy, ddy = self.get_mavs(mav_n_s)
+        for i in range(len(mav_n_s)):
+            self.mav_y[mav_n_s[i]] = y[i]
+            self.mav_dy[mav_n_s[i]] = dy[i]
+            self.mav_ddy[mav_n_s[i]] = ddy[i]
+
+    def get_mavs(self, n):
         y = []
+        dy = []
+        ddy = []
         for mav in n:
-            data = []
+            # moving average for each day
+            moving_average = []
             for i in range(len(self.closes)):
-                if i > mav:
-                    data.append(sum([self.closes[z] for z in range(i-mav, i)]) / mav)
-            y.append(data)
-        return y
+                if i >= mav - 1:
+                    moving_average.append(sum([self.closes[z] for z in range(i - mav + 1, i + 1)]) / mav)
+                else:
+                    moving_average.append(0)
+
+            slopes_1 = []
+            for i in range(len(moving_average)):
+                if i >= mav:
+                    slopes_1.append(moving_average[i] - moving_average[i - 1])
+                else:
+                    slopes_1.append(0)
+
+            # first derivatives
+            first = []
+            for i in range(len(slopes_1)):
+                if i >= mav:
+                    first.append((slopes_1[i] + slopes_1[i - 1]) / 2)
+                else:
+                    first.append(0)
+
+            slopes_2 = []
+            for i in range(1, len(first)):
+                slopes_2.append(first[i] - first[i - 1])
+
+            # second derivatives
+            second = [0, 0]
+            for i in range(1, len(slopes_2)):
+                second.append((slopes_2[i] + slopes_2[i - 1] / 2))
+
+            y.append(moving_average)
+            dy.append(first)
+            ddy.append(second)
+
+        return y, dy, ddy
+
+    def colour_meter(self) -> [float]:
+        values = []
+        for day in range(35, len(self.dates)):
+            # garbage
+            value = 0.5
+            values.append(value)
+        return values
 
     def getLevels(self):
 
@@ -80,11 +142,12 @@ class Chart:
         #     return resistance
 
         def isSupport(i):
-            support = self.candles[i].close > self.candles[i-1].close and self.candles[i-1].open > self.candles[i].close
-            return support
+            return self.candles[i - 1].close < self.candles[i].close < self.candles[i - 1].open
+            # return self.candles[i].close > self.candles[i-1].close and self.candles[i-1].open > self.candles[i].close
+
         def isResistance(i):
-            resistance = self.candles[i].close < self.candles[i-1].close and self.candles[i-1].open < self.candles[i].close
-            return resistance
+            return self.candles[i - 1].close > self.candles[i].close > self.candles[i - 1].open
+            # return self.candles[i].close < self.candles[i-1].close and self.candles[i-1].open < self.candles[i].close
 
         # def isSupport(i):
         #     support = self.candles[i].close > self.candles[i - 2].high \
@@ -122,7 +185,7 @@ class Chart:
         return levels
 
     def getData(self, timeframe=None):
-        if timeframe == None:
+        if timeframe is None:
             return get_data(self.ticker, self.period, self.timeframe).dropna()
         else:
             return get_data(self.ticker, self.period, timeframe).dropna()
@@ -148,3 +211,6 @@ class Chart:
     #         if flag:
     #             pass
     #         return count_new_candles
+
+
+nvda = Stock('NVDA')
