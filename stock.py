@@ -69,7 +69,7 @@ class Chart:
 
     # TODO
     def update(self):
-
+        pass
 
 
     # def update_candles(self):
@@ -92,8 +92,6 @@ class Chart:
     #         if flag:
     #             pass
     #         return count_new_candles
-
-
 
     def update_mavs(self):
         mav_n_s = [2, 7, 21, 35]
@@ -126,19 +124,31 @@ class Chart:
             # first derivatives
             first = []
             for i in range(len(slopes_1)):
-                if i >= mav:
-                    first.append((slopes_1[i] + slopes_1[i - 1]) / 2)
+                if i >= mav + 1:
+                    if i == len(slopes_1) - 1:
+                        first.append(slopes_1[i])
+                    else:
+                        first.append((slopes_1[i] + slopes_1[i - 1]) / 2)
                 else:
                     first.append(0)
 
             slopes_2 = []
             for i in range(1, len(first)):
-                slopes_2.append(first[i] - first[i - 1])
+                if i >= mav + 1:
+                    slopes_2.append(first[i] - first[i - 1])
+                else:
+                    slopes_2.append(0)
 
             # second derivatives
-            second = [0, 0]
-            for i in range(1, len(slopes_2)):
-                second.append((slopes_2[i] + slopes_2[i - 1] / 2))
+            second = []
+            for i in range(len(slopes_2)):
+                if i >= mav + 2:
+                    if i == len(slopes_2) - 1:
+                        second.append(slopes_2[i])
+                    else:
+                        second.append((slopes_2[i] + slopes_2[i - 1] / 2))
+                else:
+                    second.append(0)
 
             y.append(moving_average)
             dy.append(first)
