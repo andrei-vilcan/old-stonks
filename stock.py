@@ -1,6 +1,27 @@
 from candle import Candle
 from get_data import get_data
 from optimize_levels import optimize_levels
+import numpy as np
+from math import factorial
+
+def savitzky_golay(y, window_size, order, deriv=0, rate=1):
+    try:
+        window_size = np.abs(np.int(window_size))
+        order = np.abs(np.int(order))
+    except ValueError as msg:
+        raise ValueError("window_size and order have to be of type int")
+    if window_size % 2 != 1 or window_size < 1:
+        raise TypeError("window_size size must be a positive odd number")
+    if window_size < order + 2:
+        raise TypeError("window_size is too small for the polynomials order")
+    order_range = range(order + 1)
+    half_window = (window_size - 1) // 2
+    b = np.mat([[k ** i for i in order_range] for k in range(-half_window, half_window + 1)])
+    m = np.linalg.pinv(b).A[deriv] * rate ** deriv * factorial(deriv)
+    firstvals = y[0] - np.abs(y[1:half_window + 1][::-1] - y[0])
+    lastvals = y[-1] + np.abs(y[-half_window - 1:-1][::-1] - y[-1])
+    y = np.concatenate((firstvals, y, lastvals))
+    return np.convolve(m[::-1], y, mode='valid')
 
 
 mav_n_s = [2, 7, 14, 21, 35]
@@ -224,10 +245,14 @@ class Chart:
 
     # TODO
     def combined_scales(self, n):
+        """n = mav"""
         scale = []
         for i in range(len(self.ma_scale(n))):
-            scale.append(1 * self.horizontal_scale()[i] + 2 * self.ma_scale(n)[i])
-        return scale
+            scale.append(1.5 * self.horizontal_scale()[i] + 0.5 * self.ma_scale(n)[i])
+
+        """Smoothen scale"""
+        smooth_scale = savitzky_golay(scale, 31, 4)
+        return smooth_scale
 
     def horizontal_scale(self):
         """Matt's method"""
@@ -244,7 +269,8 @@ class Chart:
                     break
             level = (self.candles[i].close - support) / (resistance - support)
             scale.append(level)
-        return scale
+            smooth_scale = savitzky_golay(scale, 31, 4)
+        return smooth_scale
 
     def ma_scale(self, n):
         ma = self.mav_y[n]
