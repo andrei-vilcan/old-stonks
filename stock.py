@@ -1,7 +1,20 @@
 from candle import Candle
 from get_data import get_data
+import math as m
 
 import matplotlib.pyplot as plt
+
+
+def chart_weight_formula(self, bias):
+    # natural log
+    x = m.log(bias)
+    # linear
+    # x = 2 * bias
+    # quadratic
+    # x = 0.7 * bias ** 2
+    # exponential
+    # x = 1.73 ** bias
+    return x
 
 
 class Stock:
@@ -10,11 +23,12 @@ class Stock:
         self.period = '300d'
         self.ticker = ticker
         self.charts = {}
+        self.timeframes = ['1h', '1d', '1wk']
         """
         Charts store daily candles, and lines
         - add moving averages and any other ideas for indicator creation
         """
-        for timeframe in ['1h', '1d', '1wk']:
+        for timeframe in self.timeframes:
             self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
 
         """Obtain optimized levels"""
@@ -28,8 +42,9 @@ class Stock:
 
     # TODO
     def update(self):
-        for chart in self.charts.values:
-            chart.update()
+        for time_frame in self.timeframes:
+            z = self.charts()
+
 
     def add_time_frame(self, time_frame_s):
         if time_frame_s.isinstance(str):
@@ -48,8 +63,8 @@ class Chart:
         self.ticker = ticker
         self.period = period
         self.timeframe = timeframe
-        self.value = default_value()
-
+        bias = 33
+        self.weight = self.default_weight(bias)
 
         data = self.getData()
         self.dates = data.index.tolist()
@@ -70,21 +85,24 @@ class Chart:
         self.mav_ddy = {}
         self.update_mavs()
 
-        self.ratings = self.rate()
+        self.value = self.evaluate()
 
-    def default_value(self, ticker):
+    def default_weight(self, bias):
         if self.ticker == '1h':
-            value = 3
+            weight = 1 + bias
         elif self.ticker == '1d':
-            value =
+            weight = 24 + bias
         elif self.ticker == '1wk':
-            value =
+            weight = 168 + bias
         else:
-            value = 0
-        return value
+            weight = 0
+        return weight
+
+    # update
     # TODO
-    def update(self):
-        pass
+    # def update(self):
+    #     count_new_candles = []
+    #     data - get_data(self.ticker)
 
 
     # def update_candles(self):
@@ -109,7 +127,7 @@ class Chart:
     #         return count_new_candles
 
     def update_mavs(self):
-        mav_n_s = [2, 7, 21, 35]
+        mav_n_s = [2, 7, 14, 21, 35]
         y, dy, ddy = self.get_mavs(mav_n_s)
         for i in range(len(mav_n_s)):
             self.mav_y[mav_n_s[i]] = y[i]
@@ -143,6 +161,7 @@ class Chart:
                     if i == len(slopes_1) - 1:
                         first.append(slopes_1[i])
                     else:
+                        # in the future, predict
                         first.append((slopes_1[i] + slopes_1[i - 1]) / 2)
                 else:
                     first.append(0)
@@ -161,6 +180,7 @@ class Chart:
                     if i == len(slopes_2) - 1:
                         second.append(slopes_2[i])
                     else:
+                        # in the future, predict
                         second.append((slopes_2[i] + slopes_2[i - 1] / 2))
                 else:
                     second.append(0)
@@ -172,17 +192,17 @@ class Chart:
         return y, dy, ddy
 
     # TODO
-    # def buy_sell_scale(self) -> [float]:
+    # def evaluate(self) -> [float]:
 
-    def buy_lines(self):
-        buy = []
-        sell = []
-        margin = 0.05
-        for i in range(35, len(self.dates)):
+    def buy_lines(self, n, margin):
+        buy = [0]
+        sell = [0]
+        # margin = 0.6
+        for i in range(n + 3, len(self.dates) - 1):
             # if flat
-            if 0 - margin <= self.mav_dy[2][i] <= 0 + margin:
+            if 0 - margin <= self.mav_dy[n][i] <= 0 + margin:
                 # if up
-                if self.mav_ddy[2][i] > 0:
+                if self.mav_ddy[n][i] > 0:
                     buy.append(i)
                 else:
                     sell.append(i)
@@ -244,16 +264,17 @@ class Chart:
 
         return levels
 
+    def evaluate(self):
+        return 0
+
     def getData(self, timeframe=None):
         if timeframe is None:
             return get_data(self.ticker, self.period, self.timeframe).dropna()
         else:
             return get_data(self.ticker, self.period, timeframe).dropna()
 
-nvidia = Stock('NVDA')
-tesla = Stock('TSLA')
 
-y = list(tesla.charts['1d'].closes)
-x = [i for i in range(len(y))]
-
-
+# nvidia = Stock('NVDA')
+# tesla = Stock('TSLA')
+#
+# stocks = {'TSLA': tesla, 'NVDA': nvidia}
