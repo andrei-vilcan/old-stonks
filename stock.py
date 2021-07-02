@@ -257,16 +257,19 @@ class Chart:
     def horizontal_scale(self):
         """Matt's method"""
         scale = []
-        levels = list(optimize_levels(self).values())
+        levels = optimize_levels(self)
+        prices = list(levels.values())
+        dates = list(levels.keys())
         for i in range(len(self.candles)):
             support = 0
             resistance = 0
             for n in range(len(levels)):
-                if levels[n] <= self.candles[i].close:
-                    support = levels[n]
-                elif levels[n] > self.candles[i].close:
-                    resistance = levels[n]
-                    break
+                if dates[n] < self.candles[i].date:
+                    if prices[n] <= self.candles[i].close:
+                        support = prices[n]
+                    elif prices[n] > self.candles[i].close:
+                        resistance = prices[n]
+                        break
             level = (self.candles[i].close - support) / (resistance - support)
             scale.append(level)
             smooth_scale = savitzky_golay(scale, 31, 4)
@@ -290,4 +293,3 @@ class Chart:
         else:
             weight = 0
         return weight
-

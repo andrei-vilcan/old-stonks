@@ -3,7 +3,7 @@ from stock import Stock
 
 mav = 21
 
-stock = Stock('NVDA')
+stock = Stock('AAPL')
 data = list(stock.charts['1d'].closes)
 colours = stock.charts['1d'].horizontal_scale()
 
@@ -23,7 +23,7 @@ cm = plt.cm.get_cmap('RdYlGn')
 plt.scatter(x=range(len(data)), y=data, c=colours, cmap=cm)
 
 
-for point in sells:
+for point in buys:
     plt.axvline(x=point)
 
 plt.show()

@@ -1,25 +1,28 @@
 from stock import Stock
-from graph_data import graphData
-from ticker_scrapers.reddit_scraper import tickers
+import matplotlib.pyplot as plt
+from reddit_scraper import tickers
+from optimize_levels import optimize_levels
 
-stocks = []
+stonks = []
 
 """Remove '$' from tickers, add to stocks"""
 for k,v in tickers.items():
     if v > 4 and '$' in str(k):
-        stocks.append(k.replace('$',''))
+        stonks.append(k.replace('$',''))
+
 
 setups = []
-
-"""Iterate through stocks and find best entries (setups)"""
-for stonk in stocks:
+"""Iterate through stocks and find colour values (store in setups)"""
+for stonk in stonks:
     try:
-        """Define Stocks"""
+        """Define Parameters"""
         stock = Stock(stonk)
         chart = stock.charts['1d']
-        closes = chart.closes.tolist()
+        closes = list(chart.closes)
+        colours = chart.horizontal_scale()
+
         lines = []
-        [lines.append(line) for line in stock.charts['1h'].optimized_levels if line not in lines].sort()
+        [lines.append(line) for line in optimize_levels(chart).values() if line not in lines]
 
         """
         Iterate through stocks (from present to past), find a 'set up' 
@@ -27,15 +30,13 @@ for stonk in stocks:
         back into it to test it as support
         """
         current_price = closes[-1]
-
-        for i in range(1, len(lines)):
-            if lines[-i] < current_price:
-                support = lines[-i]
-                if any(close > current_price for close in closes[-3:]):
-                    setups.append((stock.ticker, float(current_price / lines[-i])))
-                    break
+        setups.append((stock, colours[-1]))
     except:
         pass
+"""sort setups from small to large to find best buy"""
+setups = sorted(setups, key=lambda x: x[1])
 
-for setup in setups:
-    graphData(setup[0])
+"""print stonks w scale"""
+cm = plt.cm.get_cmap('RdYlGn')
+for setup in setups[:5]:
+    plt.scatter(x=range(len(setup[0].charts['1d'].closes)), y=setup[0].charts['1d'].closes, c=setup[0].charts['1d'].horizontal_scale())
