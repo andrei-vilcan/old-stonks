@@ -277,8 +277,16 @@ class Chart:
                     sell.append(i)
         return buy, sell
 
-    def derivative_scale(self, n):
-        self.mav_dy[21]
+    def derivative_scale(self, n, margin):
+        buys = []
+        sells = []
+        for i in range(n, len(self.dates) - 1):
+            if 0 - margin <= self.mav_dy[n][i] <= 0 + margin:
+                if self.mav_ddy[n][i] > 0:
+                    buys.append(i)
+                else:
+                    sells.append(i)
+        return buys, sells
 
     # TODO
     def combined_scales(self, n):

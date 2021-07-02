@@ -72,7 +72,7 @@ stock = Stock('TSLA')
 
 fig, (ax1) = plt.subplots(1)
 
-ax1.plot(stock.charts['1d'].derivative_scale())
+ax1.plot(stock.charts['1d'].derivative_scale(35, 0.7))
 # ax2.plot(stock.charts['1d'].buy_n_sell_lines(11, 0.5)[0])
 
 plt.show()
