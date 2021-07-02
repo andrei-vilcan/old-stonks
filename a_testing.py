@@ -2,11 +2,11 @@ import matplotlib.pyplot as plt
 from stock import Stock
 from stock import savitzky_golay
 
-stock = Stock('TSLA')
-
+# stock = Stock('TSLA')
+#
 # data = list(stock.charts['1d'].closes)
-
-
+#
+#
 # first_dev_7 = stock.charts['1d'].mav_dy[7]
 # first_dev_14 = stock.charts['1d'].mav_dy[14]
 # first_dev_35 = stock.charts['1d'].mav_dy[35]
@@ -68,7 +68,11 @@ stock = Stock('TSLA')
 #     growth += simulate(stock)
 # print(growth/count)
 
+stock = Stock('TSLA')
+
 fig, (ax1) = plt.subplots(1)
+
 ax1.plot(stock.charts['1d'].derivative_scale())
+# ax2.plot(stock.charts['1d'].buy_n_sell_lines(11, 0.5)[0])
 
 plt.show()

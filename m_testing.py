@@ -8,7 +8,7 @@ data = list(stock.charts['1d'].closes)
 colours = stock.charts['1d'].horizontal_scale()
 
 buys = stock.charts['1d'].buy_n_sell_lines(7, 0.3)[0]
-sells = stock.charts['1d'].buy_n_sell_lines(2, 0.05)[1]
+sells = stock.charts['1d'].buy_n_sell_lines(7, 0.05)[1]
 
 # first_dev_35 = stock.charts['1d'].mav_dy[35]
 # first_dev_14 = stock.charts['1d'].mav_dy[14]
