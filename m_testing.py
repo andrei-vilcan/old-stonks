@@ -21,9 +21,9 @@ sells = stock.charts['1d'].buy_n_sell_lines(7, 0.05)[1]
 
 cm = plt.cm.get_cmap('RdYlGn')
 plt.scatter(x=range(len(data)), y=data, c=colours, cmap=cm)
+plt.plot(stock.charts['1d'].mav_ddy[5])
 
-
-for point in buys:
-    plt.axvline(x=point)
+# for point in buys:
+#     plt.axvline(x=point)
 
 plt.show()

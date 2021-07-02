@@ -6,25 +6,32 @@ import math as m
 from math import factorial
 
 
+def cluster(lines, mingap=0.95, maxgap=1.05):
+    groups = []
+    inGroup = False
 
-# def savitzky_golay(lst, window_size, order, deriv=0, rate=1):
-#     try:
-#         window_size = np.abs(int(window_size))
-#         order = np.abs(int(order))
-#     except ValueError as msg:
-#         raise ValueError("window_size and order have to be of type int")
-#     if window_size % 2 != 1 or window_size < 1:
-#         raise TypeError("window_size size must be a positive odd number")
-#     if window_size < order + 2:
-#         raise TypeError("window_size is too small for the polynomials order")
-#     order_range = range(order + 1)
-#     half_window = (window_size - 1) // 2
-#     b = np.mat([[k ** i for i in order_range] for k in range(-half_window, half_window + 1)])
-#     m_ = np.linalg.pinv(b).A[deriv] * rate ** deriv * factorial(deriv)
-#     firstvals = lst[0] - np.abs(lst[1:half_window + 1][::-1] - lst[0])
-#     lastvals = lst[-1] + np.abs(lst[-half_window - 1:-1][::-1] - lst[-1])
-#     lst = np.concatenate((firstvals, lst, lastvals))
-#     return np.convolve(m_[::-1], lst, mode='valid')
+    # Iter through initial lines
+    for i in range(len(lines)):
+
+        line = lines[i]
+        # if first iter, create new cluster
+        if i == 0:
+            groups.append([line])
+        else:
+            # get max/min/median of current group
+            current_group = groups[-1]
+            max_ = max(current_group)
+            min_ = min(current_group)
+            median_= (max_ + min_) / 2
+            # if price is within max/min * median of group, add to group
+            if median_ * maxgap > line > median_ * mingap:
+                groups[-1].append(line)
+            else:
+                # create new group
+                groups.append([line])
+
+    
+    return groups
 
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
@@ -209,59 +216,10 @@ class Chart:
         y = []
         dy = []
         ddy = []
-        # for mav in n:
-        #     # moving average for each day
-        #     moving_average = []
-        #     for i in range(len(self.closes)):
-        #         if i >= mav - 1:
-        #             moving_average.append(sum([self.closes[z] for z in range(i - mav + 1, i + 1)]) / mav)
-        #         else:
-        #             moving_average.append(0)
-        #
-        #     slopes_1 = []
-        #     for i in range(len(moving_average)):
-        #         if i >= mav:
-        #             slopes_1.append(moving_average[i] - moving_average[i - 1])
-        #         else:
-        #             slopes_1.append(0)
-        #
-        #     # first derivatives
-        #     first = []
-        #     for i in range(len(slopes_1)):
-        #         if i >= mav + 1:
-        #             if i == len(slopes_1) - 1:
-        #                 first.append(slopes_1[i])
-        #             else:
-        #                 first.append((slopes_1[i] + slopes_1[i - 1]) / 2)
-        #         else:
-        #             first.append(0)
-        #
-        #     slopes_2 = []
-        #     for i in range(1, len(first)):
-        #         if i >= mav + 1:
-        #             slopes_2.append(first[i] - first[i - 1])
-        #         else:
-        #             slopes_2.append(0)
-        #
-        #     # second derivatives
-        #     second = []
-        #     for i in range(len(slopes_2)):
-        #         if i >= mav + 2:
-        #             if i == len(slopes_2) - 1:
-        #                 second.append(slopes_2[i])
-        #             else:
-        #                 second.append((slopes_2[i] + slopes_2[i - 1] / 2))
-        #         else:
-        #             second.append(0)
-        #
-        #     y.append(moving_average)
-        #     dy.append(first)
-        #     ddy.append(second)
         for mav in mavs:
             y.append(savitzky_golay(self.closes, mav, 3))
             dy.append(savitzky_golay(self.closes, mav, 3, 1))
             ddy.append(savitzky_golay(self.closes, mav, 3, 2))
-
         return y, dy, ddy
 
     def buy_n_sell_lines(self, n, margin):
@@ -295,9 +253,8 @@ class Chart:
         for i in range(len(self.ma_scale(n))):
             scale.append(1.5 * self.horizontal_scale()[i] + 0.5 * self.ma_scale(n)[i])
 
-        """Smoothen scale"""
-        smooth_scale = savitzky_golay(scale, 31, 4)
-        return smooth_scale
+        """Smoothen scale maybe"""
+        return scale
 
     def horizontal_scale(self):
         """Matt's method"""
