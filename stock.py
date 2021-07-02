@@ -45,6 +45,7 @@ class Stock:
         self.period = '370d'
         self.ticker = ticker
         self.charts = {}
+
         """
         Charts store daily candles, and lines
         - add moving averages and any other ideas for indicator creation
@@ -52,8 +53,6 @@ class Stock:
         for timeframe in ['1h', '1d', '1wk']:
             self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
 
-        """Obtain optimized levels"""
-        # self.lines = optimize_levels(weekly, daily, hourly?)
 
     def ticker(self):
         return self.ticker
@@ -248,11 +247,10 @@ class Chart:
         """n = mav"""
         scale = []
         for i in range(len(self.ma_scale(n))):
-            scale.append(1.5 * self.horizontal_scale()[i] + 0.5 * self.ma_scale(n)[i])
+            scale.append(1.5 * self.horizontal_scale()[i] + 0.2 * self.ma_scale(n)[i])
 
         """Smoothen scale"""
-        smooth_scale = savitzky_golay(scale, 31, 4)
-        return smooth_scale
+        return scale
 
     def horizontal_scale(self):
         """Matt's method"""
@@ -262,7 +260,7 @@ class Chart:
         dates = list(levels.keys())
         for i in range(len(self.candles)):
             support = 0
-            resistance = 0
+            resistance = 99999
             for n in range(len(levels)):
                 if dates[n] < self.candles[i].date:
                     if prices[n] <= self.candles[i].close:
@@ -272,7 +270,8 @@ class Chart:
                         break
             level = (self.candles[i].close - support) / (resistance - support)
             scale.append(level)
-            smooth_scale = savitzky_golay(scale, 31, 4)
+
+        smooth_scale = savitzky_golay(scale, 31, 4)
         return smooth_scale
 
     def ma_scale(self, n):
