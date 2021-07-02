@@ -5,7 +5,10 @@ import numpy as np
 import math as m
 from math import factorial
 from typing import List
-import heapq
+
+
+# mav_n_s = [3, 7, 13, 21, 35]
+mav_n_s = [5, 7, 11, 17, 25, 39]
 
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
@@ -28,42 +31,33 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     return np.convolve(m[::-1], y, mode='valid')
 
 
-def merge(array_a: List, array_b: List, a: int, b: int):
-    """
-    >>> array_a = [8, 7, 5, 4, 2]
-    >>> array_b = [6, 3, 1, -1, -2, -3]
-    >>> a = len(array_a)
-    >>> b = len(array_b)
-    >>> merge(array_a, array_b, a, b)
-    [8, 7, 6, 5, 4, 3, 2, 1, -1, -2, -3]
-    """
-    a = len(array_a)
-    b = len(array_b)
-    x = [0 for i in range(a + b)]
-    i = 0
-    j = 0
+def cluster(values):
+    groups = []
+    inGroup = False
+    mingap, maxgap = 0.85, 1.15
 
-    while i < a and j < b:
-        if array_b[j] > array_a[i]:
-            x[i + j] = array_b[j]
-            j += 1
+    # Iter through initial values
+    for i in range(len(values)):
+        # if first iter, create new cluster
+        if i == 0:
+            groups.append([values[i]])
         else:
-            x[i + j] = array_a[i]
-            i += 1
-    if i == a:
-        m = b - j
-        for _ in range(m):
-            x[i + j] = array_b[j]
-            j += 1
-    else:
-        m = a - i
-        for _ in range(m):
-            x[i + j] = array_a[i]
-    return x
+            # get max/min/median of current group
+            current_group = groups[-1]
+            max_price, min_price = max(current_group), min(current_group)
+            median_price = (max_price + min_price) / 2
+            # if price is within max/min * median of group, add to group
+            if median_price * maxgap > values[i] > median_price * mingap:
+                groups[-1].append(values[i])
+            else:
+                # create new group
+                groups.append([values[i]])
 
+    refined_groups = []
+    for group in groups:
+        refined_groups.append(max(group))
 
-# mav_n_s = [3, 7, 13, 21, 35]
-mav_n_s = [7, 11, 17, 25, 39]
+    return refined_groups
 
 
 def chart_weight_formula(bias):
@@ -216,54 +210,7 @@ class Chart:
         y = []
         dy = []
         ddy = []
-        # for mav in n:
-        #     # moving average for each day
-        #     moving_average = []
-        #     for i in range(len(self.closes)):
-        #         if i >= mav - 1:
-        #             moving_average.append(sum([self.closes[z] for z in range(i - mav + 1, i + 1)]) / mav)
-        #         else:
-        #             moving_average.append(0)
-        #
-        #     slopes_1 = []
-        #     for i in range(len(moving_average)):
-        #         if i >= mav:
-        #             slopes_1.append(moving_average[i] - moving_average[i - 1])
-        #         else:
-        #             slopes_1.append(0)
-        #
-        #     # first derivatives
-        #     first = []
-        #     for i in range(len(slopes_1)):
-        #         if i >= mav + 1:
-        #             if i == len(slopes_1) - 1:
-        #                 first.append(slopes_1[i])
-        #             else:
-        #                 first.append((slopes_1[i] + slopes_1[i - 1]) / 2)
-        #         else:
-        #             first.append(0)
-        #
-        #     slopes_2 = []
-        #     for i in range(1, len(first)):
-        #         if i >= mav + 1:
-        #             slopes_2.append(first[i] - first[i - 1])
-        #         else:
-        #             slopes_2.append(0)
-        #
-        #     # second derivatives
-        #     second = []
-        #     for i in range(len(slopes_2)):
-        #         if i >= mav + 2:
-        #             if i == len(slopes_2) - 1:
-        #                 second.append(slopes_2[i])
-        #             else:
-        #                 second.append((slopes_2[i] + slopes_2[i - 1] / 2))
-        #         else:
-        #             second.append(0)
-        #
-        #     y.append(moving_average)
-        #     dy.append(first)
-        #     ddy.append(second)
+
         for mav in n:
             y.append(savitzky_golay(self.closes, mav + 4, 4))
             dy.append(savitzky_golay(self.closes, mav + 4, 4, 1))
@@ -272,41 +219,31 @@ class Chart:
         return y, dy, ddy
 
     def buy_n_sell_lines(self, n, margin):
-        buy = []
-        sell = []
+        buys = []
+        sells = []
         for i in range(n + 4, len(self.dates) - 1):
             # if flat
             if 0 - margin <= self.mav_dy[n][i] <= 0 + margin:
                 # if up
                 if self.mav_ddy[n][i] > 0:
-                    buy.append(i)
+                    buys.append(i)
                 else:
-                    sell.append(i)
-        return buy, sell
+                    sells.append(i)
+        return buys, sells
 
     def derivative_scale(self):
         buys = self.buy_n_sell_lines(11, 0.5)[0]
-        sells = self.buy_n_sell_lines(7, 0.1)[1]
+        sells = self.buy_n_sell_lines(7, 0.2)[1]
+        return buys
 
-        values = []
-        for i in range(len(self.dates)):
-            if i in buys:
-                values.append(3)
-            elif i in sells:
-                values.append(1)
-            else:
-                values.append(2)
 
-        return savitzky_golay(values, 11, 4)
-
-    # TODO
     def combined_scales(self, n):
         """n = mav"""
         scale = []
         for i in range(len(self.ma_scale(n))):
             scale.append(1.5 * self.horizontal_scale()[i] + 0.2 * self.ma_scale(n)[i])
 
-        """Smoothen scale"""
+        # Smoothen scale with svitzky
         return scale
 
     def horizontal_scale(self):

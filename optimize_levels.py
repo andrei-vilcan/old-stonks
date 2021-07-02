@@ -2,6 +2,7 @@ import operator
 
 
 def optimize_levels(chart, merge_levels=None, mingap=0.94, maxgap=1.05, trading_range=1.05):
+
     """Define variables"""
     candles = chart.candles
     lines = chart.levels
@@ -14,7 +15,6 @@ def optimize_levels(chart, merge_levels=None, mingap=0.94, maxgap=1.05, trading_
     - store (date,price) for each level in cluster
     - return list groups ([]) with dicts of clusters ( {date:level} )
     """
-
     def cluster(lines):
         groups = []
         inGroup = False
