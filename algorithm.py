@@ -7,8 +7,6 @@ stock_dict = []
 #     for stock in stock:
 #
 
-def one(stock, time, limit):
-    for time in stock.dates:
-        time = 0
-        while time > limit:
-            
+
+def one(stock, time_h, time_d, time_wk, limit):
+

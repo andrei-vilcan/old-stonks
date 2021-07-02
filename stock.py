@@ -2,7 +2,11 @@ from candle import Candle
 from get_data import get_data
 from optimize_levels import optimize_levels
 import numpy as np
+import math as m
 from math import factorial
+from typing import List
+import heapq
+
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     try:
@@ -24,7 +28,42 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     return np.convolve(m[::-1], y, mode='valid')
 
 
-mav_n_s = [2, 7, 14, 21, 35]
+def merge(array_a: List, array_b: List, a: int, b: int):
+    """
+    >>> array_a = [8, 7, 5, 4, 2]
+    >>> array_b = [6, 3, 1, -1, -2, -3]
+    >>> a = len(array_a)
+    >>> b = len(array_b)
+    >>> merge(array_a, array_b, a, b)
+    [8, 7, 6, 5, 4, 3, 2, 1, -1, -2, -3]
+    """
+    a = len(array_a)
+    b = len(array_b)
+    x = [0 for i in range(a + b)]
+    i = 0
+    j = 0
+
+    while i < a and j < b:
+        if array_b[j] > array_a[i]:
+            x[i + j] = array_b[j]
+            j += 1
+        else:
+            x[i + j] = array_a[i]
+            i += 1
+    if i == a:
+        m = b - j
+        for _ in range(m):
+            x[i + j] = array_b[j]
+            j += 1
+    else:
+        m = a - i
+        for _ in range(m):
+            x[i + j] = array_a[i]
+    return x
+
+
+# mav_n_s = [3, 7, 13, 21, 35]
+mav_n_s = [7, 11, 17, 25, 39]
 
 
 def chart_weight_formula(bias):
@@ -106,8 +145,8 @@ class Chart:
         self.update_mavs()
 
     def getData(self, timeframe=None):
-        if timeframe is None:
-            return get_data(self.ticker, self.period, self.timeframe).dropna()
+        if not timeframe:
+            return get_data(self.ticker, self.period, self.timeframe)
         else:
             return get_data(self.ticker, self.period, timeframe).dropna()
 
@@ -167,7 +206,6 @@ class Chart:
         return levels
 
     def update_mavs(self):
-        mav_n_s = [2, 7, 14, 21, 35]
         y, dy, ddy = self.get_mavs(mav_n_s)
         for i in range(len(mav_n_s)):
             self.mav_y[mav_n_s[i]] = y[i]
@@ -178,54 +216,58 @@ class Chart:
         y = []
         dy = []
         ddy = []
+        # for mav in n:
+        #     # moving average for each day
+        #     moving_average = []
+        #     for i in range(len(self.closes)):
+        #         if i >= mav - 1:
+        #             moving_average.append(sum([self.closes[z] for z in range(i - mav + 1, i + 1)]) / mav)
+        #         else:
+        #             moving_average.append(0)
+        #
+        #     slopes_1 = []
+        #     for i in range(len(moving_average)):
+        #         if i >= mav:
+        #             slopes_1.append(moving_average[i] - moving_average[i - 1])
+        #         else:
+        #             slopes_1.append(0)
+        #
+        #     # first derivatives
+        #     first = []
+        #     for i in range(len(slopes_1)):
+        #         if i >= mav + 1:
+        #             if i == len(slopes_1) - 1:
+        #                 first.append(slopes_1[i])
+        #             else:
+        #                 first.append((slopes_1[i] + slopes_1[i - 1]) / 2)
+        #         else:
+        #             first.append(0)
+        #
+        #     slopes_2 = []
+        #     for i in range(1, len(first)):
+        #         if i >= mav + 1:
+        #             slopes_2.append(first[i] - first[i - 1])
+        #         else:
+        #             slopes_2.append(0)
+        #
+        #     # second derivatives
+        #     second = []
+        #     for i in range(len(slopes_2)):
+        #         if i >= mav + 2:
+        #             if i == len(slopes_2) - 1:
+        #                 second.append(slopes_2[i])
+        #             else:
+        #                 second.append((slopes_2[i] + slopes_2[i - 1] / 2))
+        #         else:
+        #             second.append(0)
+        #
+        #     y.append(moving_average)
+        #     dy.append(first)
+        #     ddy.append(second)
         for mav in n:
-            # moving average for each day
-            moving_average = []
-            for i in range(len(self.closes)):
-                if i >= mav - 1:
-                    moving_average.append(sum([self.closes[z] for z in range(i - mav + 1, i + 1)]) / mav)
-                else:
-                    moving_average.append(0)
-
-            slopes_1 = []
-            for i in range(len(moving_average)):
-                if i >= mav:
-                    slopes_1.append(moving_average[i] - moving_average[i - 1])
-                else:
-                    slopes_1.append(0)
-
-            # first derivatives
-            first = []
-            for i in range(len(slopes_1)):
-                if i >= mav + 1:
-                    if i == len(slopes_1) - 1:
-                        first.append(slopes_1[i])
-                    else:
-                        first.append((slopes_1[i] + slopes_1[i - 1]) / 2)
-                else:
-                    first.append(0)
-
-            slopes_2 = []
-            for i in range(1, len(first)):
-                if i >= mav + 1:
-                    slopes_2.append(first[i] - first[i - 1])
-                else:
-                    slopes_2.append(0)
-
-            # second derivatives
-            second = []
-            for i in range(len(slopes_2)):
-                if i >= mav + 2:
-                    if i == len(slopes_2) - 1:
-                        second.append(slopes_2[i])
-                    else:
-                        second.append((slopes_2[i] + slopes_2[i - 1] / 2))
-                else:
-                    second.append(0)
-
-            y.append(moving_average)
-            dy.append(first)
-            ddy.append(second)
+            y.append(savitzky_golay(self.closes, mav + 4, 4))
+            dy.append(savitzky_golay(self.closes, mav + 4, 4, 1))
+            ddy.append(savitzky_golay(self.closes, mav + 4, 4, 2))
 
         return y, dy, ddy
 
@@ -241,6 +283,21 @@ class Chart:
                 else:
                     sell.append(i)
         return buy, sell
+
+    def derivative_scale(self):
+        buys = self.buy_n_sell_lines(11, 0.5)[0]
+        sells = self.buy_n_sell_lines(7, 0.1)[1]
+
+        values = []
+        for i in range(len(self.dates)):
+            if i in buys:
+                values.append(3)
+            elif i in sells:
+                values.append(1)
+            else:
+                values.append(2)
+
+        return savitzky_golay(values, 11, 4)
 
     # TODO
     def combined_scales(self, n):
