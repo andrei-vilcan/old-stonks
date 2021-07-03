@@ -26,9 +26,9 @@ fig, (ax1, ax2, ax3) = plt.subplots(3)
 ax1.plot(stock.charts['1d'].closes.tolist())
 ax2.plot(stock.charts['1d'].closes.tolist())
 
-hourly = stock.charts['1h'].derivative_scale_both()
-daily = stock.charts['1d'].derivative_scale_both()
-weekly = stock.charts['1wk'].derivative_scale_both()
+hourly = stock.charts['1h'].derivative_scale_both_a()
+daily = stock.charts['1d'].derivative_scale_both_a()
+weekly = stock.charts['1wk'].derivative_scale_both_a()
 
 data = []
 for i in range(len(hourly)):
