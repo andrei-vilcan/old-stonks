@@ -56,7 +56,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     return np.convolve(m[::-1], y, mode='valid')
 
 
-mav_n_s = [5, 7, 11, 35]
+mav_n_s = [5, 7, 11, 21, 35]
 
 
 def chart_weight_formula(bias):
@@ -188,7 +188,7 @@ class Chart:
         levels = {}
         # +/- 2 range as isResistance/Support uses up to [+/- 2 indexing],
         # can probably reduce to 1 as only the commented out one needs 2
-        for i in range(1, len(self.candles) - 1):
+        for i in range(1, len(self.candles)):
             if isSupport(i):
                 if self.candles[i].open < self.candles[i - 1].close:
                     levels[self.candles[i].date] = self.candles[i].open
@@ -224,28 +224,104 @@ class Chart:
         return y, dy, ddy
 
     def buy_n_sell_lines(self, n, margin):
-        buy = []
-        sell = []
-        for i in range(n, len(self.dates) - 1):
-            # if flat
-            if 0 - margin <= self.mav_dy[n][i] <= 0 + margin:
-                # if up
-                if self.mav_ddy[n][i] > 0:
-                    buy.append(i)
-                else:
-                    sell.append(i)
-        return buy, sell
-
-    def derivative_scale(self, n, margin):
         buys = []
         sells = []
-        for i in range(n, len(self.dates) - 1):
+        for i in range(n, len(self.closes)):
             if 0 - margin <= self.mav_dy[n][i] <= 0 + margin:
                 if self.mav_ddy[n][i] > 0:
                     buys.append(i)
                 else:
                     sells.append(i)
         return buys, sells
+
+    def derivative_scale_primitive(self):
+        values = []
+        
+        buys = self.buy_n_sell_lines(35, 3)[0]
+        sells = self.buy_n_sell_lines(35, 3)[1]
+
+        for i in range(len(self.closes)):
+            # shiii
+            pass
+
+    def derivative_scale(self):
+
+        values = []
+        max_cluster_count = 1
+
+        clusters = cluster(self.buy_n_sell_lines(35, 3)[0])
+        for i in range(35, len(self.closes)):
+            for cluster_ in clusters:
+                if i in range(min(cluster_), max(cluster_)):
+                    strength = i - min(cluster_)
+                    break
+                else:
+                    strength = 0
+
+            if strength > max_cluster_count:
+                max_cluster_count = strength
+
+            factor = strength / max_cluster_count
+
+            if i == 35:
+                values.append(0.5 + (factor * 0.5))
+            else:
+                if strength == 0:
+                    values.append(values[-1] - values[-1]/35)
+                else:
+                    values.append(values[-1] + factor)
+
+        values = savitzky_golay(values, 9, 3)
+
+        return values
+
+    def derivative_scale_both(self):
+
+        values = []
+        max_buy_cluster_count = 1
+        max_sell_cluster_count = 1
+
+        buy_clusters = cluster(self.buy_n_sell_lines(35, 3)[0])
+        sell_clusters = cluster(self.buy_n_sell_lines(35, 3)[1])
+        for i in range(35, len(self.closes)):
+
+            for cluster_ in buy_clusters:
+                if i in range(min(cluster_), max(cluster_)):
+                    buy_strength = i - min(cluster_)
+                    break
+                else:
+                    buy_strength = 0
+
+            if buy_strength > max_buy_cluster_count:
+                max_buy_cluster_count = buy_strength
+
+            for cluster_ in sell_clusters:
+                if i in range(min(cluster_), max(cluster_)):
+                    sell_strength = - (i - min(cluster_))
+                    break
+                else:
+                    sell_strength = 0
+
+            if sell_strength < max_sell_cluster_count:
+                max_sell_cluster_count = sell_strength
+
+            ovr_strength = buy_strength + sell_strength
+
+            if ovr_strength > 0:
+                factor = ovr_strength / max_buy_cluster_count
+            elif ovr_strength < 0:
+                factor = ovr_strength / max_buy_cluster_count
+            else:
+                factor = 0
+
+            if i == 35:
+                values.append(0.5 + factor)
+            else:
+                values.append(values[-1] + factor)
+
+        # values = savitzky_golay(values, 35, 3)
+
+        return values
 
     # TODO
     def combined_scales(self, n):
