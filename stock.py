@@ -29,7 +29,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     return np.convolve( m_[::-1], y, mode='valid')
 
 
-mav_n_s = [5, 7, 11, 21, 35]
+mav_n_s = [5, 7, 15, 21, 35, 49, 121]
 
 
 def chart_weight_formula(bias):
@@ -52,7 +52,7 @@ class Stock:
     charts: dict
 
     def __init__(self, ticker: str):
-        self.period = '370d'
+        self.period = '365d'
         self.ticker = ticker
         self.charts = {}
         """
@@ -287,11 +287,11 @@ class Chart:
         return values
 
     # TODO
-    def combined_scales(self, n):
+    def combined_scales(self):
         """n = mav"""
         scale = []
-        for i in range(len(self.ma_scale(n))):
-            scale.append(self.horizontal_scale()[i] * 0.9 + self.ma_scale(n)[i] * 0.1)
+        for i in range(len(self.ma_scale())):
+            scale.append(self.horizontal_scale()[i] * 0.8 + self.ma_scale()[i] * 0.4)
 
         """Smoothen scale maybe"""
         return scale
@@ -314,15 +314,21 @@ class Chart:
                         break
             level = (self.candles[i].close - support) / (resistance - support)
             scale.append(level)
-        smooth_scale = savitzky_golay(scale, 29, 4)
+        smooth_scale = savitzky_golay(scale, 17, 4)
         return smooth_scale
 
-    def ma_scale(self, n):
-        ma = self.mav_y[n]
+    def ma_scale(self):
         scale = []
-        for i in range(n, len(self.candles)):
-            value = (self.candles[i].close - ma[i]) / self.candles[i].close
-            scale.append(value)
+        for i in range(len(self.candles)):
+            if self.mav_dy[35][i] >= 0 and self.mav_dy[49][i] >= 0 and self.mav_dy[121][i] >= 0:
+                scale.append(0.9)
+            elif self.mav_dy[35][i] < 0 and self.mav_dy[49][i] >= 0 and self.mav_dy[121][i] >= 0:
+                scale.append(0.6)
+            elif self.mav_dy[35][i] < 0 and self.mav_dy[49][i] < 0 and self.mav_dy[121][i] >= 0:
+                scale.append(0.3)
+            else:
+                scale.append(0.1)
+        scale = savitzky_golay(np.array(scale), 21, 4)
         return scale
 
     def evaluate(self):
