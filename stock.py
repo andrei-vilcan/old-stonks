@@ -6,54 +6,27 @@ import math as m
 from math import factorial
 
 
-def cluster(lines, mingap=0.95, maxgap=1.05):
-    groups = []
-    inGroup = False
-
-    # Iter through initial lines
-    for i in range(len(lines)):
-
-        line = lines[i]
-        # if first iter, create new cluster
-        if i == 0:
-            groups.append([i])
-        else:
-            # get max/min/median of current group
-            current_group = groups[-1]
-            max_ = max(current_group)
-            min_ = min(current_group)
-            median_ = (max_ + min_) / 2
-            # if price is within max/min * median of group, add to group
-            if median_ * maxgap > line > median_ * mingap:
-                groups[-1].append(i)
-            else:
-                # create new group
-                groups.append([line])
-
-    return groups
-
-
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     try:
-        window_size = np.abs(np.int(window_size))
-        order = np.abs(np.int(order))
+        window_size = np.abs(int(window_size))
+        order = np.abs(int(order))
     except ValueError as msg:
         raise ValueError("window_size and order have to be of type int")
     if window_size % 2 != 1 or window_size < 1:
         raise TypeError("window_size size must be a positive odd number")
     if window_size < order + 2:
         raise TypeError("window_size is too small for the polynomials order")
-    order_range = range(order + 1)
-    half_window = (window_size - 1) // 2
+    order_range = range(order+1)
+    half_window = (window_size -1) // 2
     # precompute coefficients
-    b = np.mat([[k ** i for i in order_range] for k in range(-half_window, half_window + 1)])
-    m = np.linalg.pinv(b).A[deriv] * rate ** deriv * factorial(deriv)
+    b = np.mat([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
+    m_ = np.linalg.pinv(b).A[deriv] * rate**deriv * factorial(deriv)
     # pad the signal at the extremes with
     # values taken from the signal itself
-    firstvals = y[0] - np.abs(y[1:half_window + 1][::-1] - y[0])
-    lastvals = y[-1] + np.abs(y[-half_window - 1:-1][::-1] - y[-1])
+    firstvals = y[0] - np.abs( y[1:half_window+1][::-1] - y[0] )
+    lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
-    return np.convolve(m[::-1], y, mode='valid')
+    return np.convolve( m_[::-1], y, mode='valid')
 
 
 mav_n_s = [5, 7, 11, 21, 35]
@@ -234,16 +207,6 @@ class Chart:
                     sells.append(i)
         return buys, sells
 
-    def derivative_scale_primitive(self):
-        values = []
-        
-        buys = self.buy_n_sell_lines(35, 3)[0]
-        sells = self.buy_n_sell_lines(35, 3)[1]
-
-        for i in range(len(self.closes)):
-            # shiii
-            pass
-
     def derivative_scale(self):
 
         values = []
@@ -271,20 +234,20 @@ class Chart:
                 else:
                     values.append(values[-1] + factor)
 
-        values = savitzky_golay(values, 9, 3)
+        # values = savitzky_golay(values, 9, 3)
 
         return values
 
-    def derivative_scale_both(self):
+    def derivative_scale_both_a(self):
 
         values = []
         max_buy_cluster_count = 1
         max_sell_cluster_count = 1
 
-        buy_clusters = cluster(self.buy_n_sell_lines(35, 3)[0])
-        sell_clusters = cluster(self.buy_n_sell_lines(35, 3)[1])
-        for i in range(35, len(self.closes)):
-
+        buy_clusters = cluster(self.buy_n_sell_lines(11, 3)[0])
+        sell_clusters = cluster(self.buy_n_sell_lines(11, 3)[1])
+        for i in range(11, len(self.closes)):
+            buy_strength = 0
             for cluster_ in buy_clusters:
                 if i in range(min(cluster_), max(cluster_)):
                     buy_strength = i - min(cluster_)
@@ -295,6 +258,7 @@ class Chart:
             if buy_strength > max_buy_cluster_count:
                 max_buy_cluster_count = buy_strength
 
+            sell_strength = 0
             for cluster_ in sell_clusters:
                 if i in range(min(cluster_), max(cluster_)):
                     sell_strength = - (i - min(cluster_))
@@ -314,7 +278,7 @@ class Chart:
             else:
                 factor = 0
 
-            if i == 35:
+            if i == 11:
                 values.append(0.5 + factor)
             else:
                 values.append(values[-1] + factor)
