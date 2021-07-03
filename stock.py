@@ -244,46 +244,47 @@ class Chart:
         max_buy_cluster_count = 1
         max_sell_cluster_count = 1
 
-        buy_clusters = self.cluster()
-        sell_clusters = self.cluster()
+        buy_clusters = self.cluster(self.buy_n_sell_lines(11, 3)[0])
+        sell_clusters = self.cluster(self.buy_n_sell_lines(11, 3)[1])
         for i in range(11, len(self.closes)):
             buy_strength = 0
+            for cluster_ in buy_clusters:
+                if i in range(min(cluster_), max(cluster_)):
+                    buy_strength = i - min(cluster_)
+                    break
+                else:
+                    buy_strength = 0
 
+            if buy_strength > max_buy_cluster_count:
+                max_buy_cluster_count = buy_strength
 
-        for cluster_ in buy_clusters:
-            if i in range(min(cluster_), max(cluster_)):
-                buy_strength = i - min(cluster_)
-                break
+            sell_strength = 0
+            for cluster_ in sell_clusters:
+                if i in range(min(cluster_), max(cluster_)):
+                    sell_strength = - (i - min(cluster_))
+                    break
+                else:
+                    sell_strength = 0
+
+            if sell_strength < max_sell_cluster_count:
+                max_sell_cluster_count = sell_strength
+
+            ovr_strength = buy_strength + sell_strength
+
+            if ovr_strength > 0:
+                factor = ovr_strength / max_buy_cluster_count
+            elif ovr_strength < 0:
+                factor = ovr_strength / max_buy_cluster_count
             else:
-                buy_strength = 0
+                factor = 0
 
-        if buy_strength > max_buy_cluster_count:
-            max_buy_cluster_count = buy_strength
-
-        sell_strength = 0
-        for cluster_ in sell_clusters:
-            if i in range(min(cluster_), max(cluster_)):
-                sell_strength = - (i - min(cluster_))
-                break
+            if i == 11:
+                values.append(0.5 + factor)
             else:
-                sell_strength = 0
+                values.append(values[-1] + factor)
 
-        if sell_strength < max_sell_cluster_count:
-            max_sell_cluster_count = sell_strength
+        # values = savitzky_golay(values, 35, 3)
 
-        ovr_strength = buy_strength + sell_strength
-
-        if ovr_strength > 0:
-            factor = ovr_strength / max_buy_cluster_count
-        elif ovr_strength < 0:
-            factor = ovr_strength / max_buy_cluster_count
-        else:
-            factor = 0
-
-        if i == 11:
-            values.append(0.5 + factor)
-        else:
-            values.append(values[-1] + factor)
         return values
 
     # TODO
@@ -291,7 +292,7 @@ class Chart:
         """n = mav"""
         scale = []
         for i in range(len(self.ma_scale(n))):
-            scale.append(self.horizontal_scale()[i] * 0.9 + self.ma_scale(n)[i] * 0.1)
+            scale.append(1.5 * self.horizontal_scale()[i] + 0.5 * self.ma_scale(n)[i])
 
         """Smoothen scale maybe"""
         return scale
@@ -314,7 +315,7 @@ class Chart:
                         break
             level = (self.candles[i].close - support) / (resistance - support)
             scale.append(level)
-        smooth_scale = savitzky_golay(scale, 29, 4)
+            smooth_scale = savitzky_golay(scale, 31, 4)
         return smooth_scale
 
     def ma_scale(self, n):
@@ -327,31 +328,6 @@ class Chart:
 
     def evaluate(self):
         return [1]
-
-    def cluster(self, gap=1.02):
-        # lines: list of indexes of significant points
-        line_clusters = []
-
-        # Iter through initial lines
-        for i in self.buy_n_sell_lines(35, 3)[0]:
-            count = 0
-            # if first iter, create new cluster
-            if count == 0:
-                line_clusters.append([i])
-                count += 1
-            else:
-                # get max/min/median of current group
-                current_group = line_clusters[-1]
-                prices = float(np.average([x[1] for x in current_group]))
-
-                # if price is within max/min * median of group, add to group
-                if i / line_clusters[-1][-1] > gap:
-                    line_clusters[-1].append(i)
-                else:
-                    # create new group
-                    line_clusters.append([i])
-        group_prices = [sum(x)/len(x) for x in line_clusters]
-        return line_clusters
 
     def default_weight(self, bias):
         if self.ticker == '1h':
