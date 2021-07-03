@@ -244,8 +244,8 @@ class Chart:
         max_buy_cluster_count = 1
         max_sell_cluster_count = 1
 
-        buy_clusters = self.cluster(self.buy_n_sell_lines(11, 3)[0])
-        sell_clusters = self.cluster(self.buy_n_sell_lines(11, 3)[1])
+        buy_clusters = cluster(self.buy_n_sell_lines(11, 3)[0])
+        sell_clusters = cluster(self.buy_n_sell_lines(11, 3)[1])
         for i in range(11, len(self.closes)):
             buy_strength = 0
             for cluster_ in buy_clusters:
