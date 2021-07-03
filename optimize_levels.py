@@ -1,7 +1,7 @@
 import operator
 
 
-def optimize_levels(chart, merge_levels=None, mingap=0.94, maxgap=1.05, trading_range=1.05):
+def optimize_levels(chart, merge_levels=None, mingap=0.96, maxgap=1.05, trading_range=1.06):
 
     """Define variables"""
     candles = chart.candles
