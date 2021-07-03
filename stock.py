@@ -16,21 +16,20 @@ def cluster(lines, mingap=0.95, maxgap=1.05):
         line = lines[i]
         # if first iter, create new cluster
         if i == 0:
-            groups.append([line])
+            groups.append([i])
         else:
             # get max/min/median of current group
             current_group = groups[-1]
             max_ = max(current_group)
             min_ = min(current_group)
-            median_= (max_ + min_) / 2
+            median_ = (max_ + min_) / 2
             # if price is within max/min * median of group, add to group
             if median_ * maxgap > line > median_ * mingap:
-                groups[-1].append(line)
+                groups[-1].append(i)
             else:
                 # create new group
                 groups.append([line])
 
-    
     return groups
 
 
@@ -44,17 +43,18 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
         raise TypeError("window_size size must be a positive odd number")
     if window_size < order + 2:
         raise TypeError("window_size is too small for the polynomials order")
-    order_range = range(order+1)
-    half_window = (window_size -1) // 2
+    order_range = range(order + 1)
+    half_window = (window_size - 1) // 2
     # precompute coefficients
-    b = np.mat([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
-    m = np.linalg.pinv(b).A[deriv] * rate**deriv * factorial(deriv)
+    b = np.mat([[k ** i for i in order_range] for k in range(-half_window, half_window + 1)])
+    m = np.linalg.pinv(b).A[deriv] * rate ** deriv * factorial(deriv)
     # pad the signal at the extremes with
     # values taken from the signal itself
-    firstvals = y[0] - np.abs( y[1:half_window+1][::-1] - y[0] )
-    lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
+    firstvals = y[0] - np.abs(y[1:half_window + 1][::-1] - y[0])
+    lastvals = y[-1] + np.abs(y[-half_window - 1:-1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
-    return np.convolve( m[::-1], y, mode='valid')
+    return np.convolve(m[::-1], y, mode='valid')
+
 
 mav_n_s = [5, 7, 11, 35]
 
@@ -149,6 +149,7 @@ class Chart:
     def getLevels(self):
 
         """Look for two different chart patterns to define support/resistance"""
+
         # def isSupport(i):
         #     support = self.candles[i - 1].close - self.candles[i - 1].open < 0 and self.candles[i].close - self.candles[
         #         i].open >= 0
