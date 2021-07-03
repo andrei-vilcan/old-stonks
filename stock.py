@@ -285,16 +285,6 @@ class Chart:
                     sells.append(i)
         return buys, sells
 
-    def derivative_scale_primitive(self):
-        values = []
-        
-        buys = self.buy_n_sell_lines(35, 3)[0]
-        sells = self.buy_n_sell_lines(35, 3)[1]
-
-        for i in range(len(self.closes)):
-            # shiii
-            pass
-
     def derivative_scale(self):
 
         values = []
@@ -322,7 +312,7 @@ class Chart:
                 else:
                     values.append(values[-1] + factor)
 
-        values = savitzky_golay(values, 9, 3)
+        # values = savitzky_golay(values, 9, 3)
 
         return values
 
@@ -332,10 +322,10 @@ class Chart:
         max_buy_cluster_count = 1
         max_sell_cluster_count = 1
 
-        buy_clusters = cluster(self.buy_n_sell_lines(35, 3)[0])
-        sell_clusters = cluster(self.buy_n_sell_lines(35, 3)[1])
-        for i in range(35, len(self.closes)):
-
+        buy_clusters = cluster(self.buy_n_sell_lines(11, 3)[0])
+        sell_clusters = cluster(self.buy_n_sell_lines(11, 3)[1])
+        for i in range(11, len(self.closes)):
+            buy_strength = 0
             for cluster_ in buy_clusters:
                 if i in range(min(cluster_), max(cluster_)):
                     buy_strength = i - min(cluster_)
@@ -346,6 +336,7 @@ class Chart:
             if buy_strength > max_buy_cluster_count:
                 max_buy_cluster_count = buy_strength
 
+            sell_strength = 0
             for cluster_ in sell_clusters:
                 if i in range(min(cluster_), max(cluster_)):
                     sell_strength = - (i - min(cluster_))
@@ -365,7 +356,7 @@ class Chart:
             else:
                 factor = 0
 
-            if i == 35:
+            if i == 11:
                 values.append(0.5 + factor)
             else:
                 values.append(values[-1] + factor)
