@@ -5,6 +5,8 @@ import numpy as np
 import math as m
 from math import factorial
 
+mav_n_s = [5, 7, 15, 21, 35, 49, 121]
+
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     try:
@@ -27,9 +29,6 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
     return np.convolve( m_[::-1], y, mode='valid')
-
-
-mav_n_s = [5, 7, 15, 21, 35, 49, 121]
 
 
 def chart_weight_formula(bias):
@@ -291,13 +290,21 @@ class Chart:
         """n = mav"""
         scale = []
         for i in range(len(self.ma_scale())):
-            scale.append(self.horizontal_scale()[i] * 0.8 + self.ma_scale()[i] * 0.4)
+            scale.append(self.horizontal_scale()[i] * 0.4 + self.ma_scale()[i] * 0.6)
 
         """Smoothen scale maybe"""
+        scale = savitzky_golay(scale, 9, 3)
         return scale
 
     def horizontal_scale(self):
-        """Matt's method"""
+        """
+        Generate buy/sell scale for each candle based on distance from nearest horizontal
+        support and resistance.
+
+        TODO:
+        - if passing resistance maintain sell pressure until price has confirmed the broken
+            resistance as support
+        """
         scale = []
         levels = optimize_levels(self)
         prices = list(levels.values())
@@ -314,21 +321,21 @@ class Chart:
                         break
             level = (self.candles[i].close - support) / (resistance - support)
             scale.append(level)
-        smooth_scale = savitzky_golay(scale, 17, 4)
+        smooth_scale = savitzky_golay(scale, 11, 4)
         return smooth_scale
 
     def ma_scale(self):
         scale = []
         for i in range(len(self.candles)):
-            if self.mav_dy[35][i] >= 0 and self.mav_dy[49][i] >= 0 and self.mav_dy[121][i] >= 0:
-                scale.append(0.9)
-            elif self.mav_dy[35][i] < 0 and self.mav_dy[49][i] >= 0 and self.mav_dy[121][i] >= 0:
-                scale.append(0.6)
-            elif self.mav_dy[35][i] < 0 and self.mav_dy[49][i] < 0 and self.mav_dy[121][i] >= 0:
+            if all(i >= 0 for i in [self.mav_dy[15][i], self.mav_dy[35][i], self.mav_dy[49][i], self.mav_dy[121][i]]):
+                scale.append(1)
+            elif all(i >= 0 for i in [self.mav_dy[35][i], self.mav_dy[49][i], self.mav_dy[121][i]]):
                 scale.append(0.3)
-            else:
+            elif all(i >= 0 for i in [self.mav_dy[49][i], self.mav_dy[121][i]]):
                 scale.append(0.1)
-        scale = savitzky_golay(np.array(scale), 21, 4)
+            else:
+                scale.append(0)
+        scale = savitzky_golay(np.array(scale), 7, 3)
         return scale
 
     def evaluate(self):

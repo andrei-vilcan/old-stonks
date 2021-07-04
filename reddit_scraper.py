@@ -1,5 +1,4 @@
 import praw
-import pandas as pd
 
 """Individual Credentials"""
 # In final product, obtain these variables from main script/gui
@@ -62,5 +61,3 @@ for subreddit in subreddits:
                             pass
             except:
                 pass
-
-print(tickers)
