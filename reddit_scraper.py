@@ -61,3 +61,5 @@ for subreddit in subreddits:
                             pass
             except:
                 pass
+
+tickers_letters_only = [ticker.upper().replace('$', '') for ticker in list(tickers.keys())]

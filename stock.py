@@ -51,14 +51,14 @@ class Stock:
     charts: dict
 
     def __init__(self, ticker: str):
-        self.period = '365d'
+        self.period = '30d'
         self.ticker = ticker
         self.charts = {}
         """
         Charts store daily candles, and lines
         - add moving averages and any other ideas for indicator creation
         """
-        for timeframe in ['1h', '1d', '1wk']:
+        for timeframe in ['30m', '1h', '1d', '1wk']:
             self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
 
         """Obtain optimized levels"""
