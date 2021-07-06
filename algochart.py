@@ -6,7 +6,6 @@ import numpy as np
 import math as m
 from math import factorial
 from typing import List
-import heapq
 
 mav_n_s = [7, 11, 17, 25, 39]
 
@@ -31,10 +30,7 @@ class AlgoChart:
 
         self.levels = self.getLevels()
 
-        self.mav_y = {}
-        self.mav_dy = {}
-        self.mav_ddy = {}
-        self.update_mavs()
+        self.mav_y, self.mav_dy, self.mav_ddy = self.update_mavs()
 
     def getLevels(self):
 
@@ -93,63 +89,19 @@ class AlgoChart:
 
     def update_mavs(self):
         y, dy, ddy = self.get_mavs(mav_n_s)
+        mav_y = {}
+        mav_dy = {}
+        mav_ddy = {}
         for i in range(len(mav_n_s)):
-            self.mav_y[mav_n_s[i]] = y[i]
-            self.mav_dy[mav_n_s[i]] = dy[i]
-            self.mav_ddy[mav_n_s[i]] = ddy[i]
+            mav_y[mav_n_s[i]] = y[i]
+            mav_dy[mav_n_s[i]] = dy[i]
+            mav_ddy[mav_n_s[i]] = ddy[i]
+        return mav_y, mav_dy, mav_ddy
 
     def get_mavs(self, n):
         y = []
         dy = []
         ddy = []
-        # for mav in n:
-        #     # moving average for each day
-        #     moving_average = []
-        #     for i in range(len(self.closes)):
-        #         if i >= mav - 1:
-        #             moving_average.append(sum([self.closes[z] for z in range(i - mav + 1, i + 1)]) / mav)
-        #         else:
-        #             moving_average.append(0)
-        #
-        #     slopes_1 = []
-        #     for i in range(len(moving_average)):
-        #         if i >= mav:
-        #             slopes_1.append(moving_average[i] - moving_average[i - 1])
-        #         else:
-        #             slopes_1.append(0)
-        #
-        #     # first derivatives
-        #     first = []
-        #     for i in range(len(slopes_1)):
-        #         if i >= mav + 1:
-        #             if i == len(slopes_1) - 1:
-        #                 first.append(slopes_1[i])
-        #             else:
-        #                 first.append((slopes_1[i] + slopes_1[i - 1]) / 2)
-        #         else:
-        #             first.append(0)
-        #
-        #     slopes_2 = []
-        #     for i in range(1, len(first)):
-        #         if i >= mav + 1:
-        #             slopes_2.append(first[i] - first[i - 1])
-        #         else:
-        #             slopes_2.append(0)
-        #
-        #     # second derivatives
-        #     second = []
-        #     for i in range(len(slopes_2)):
-        #         if i >= mav + 2:
-        #             if i == len(slopes_2) - 1:
-        #                 second.append(slopes_2[i])
-        #             else:
-        #                 second.append((slopes_2[i] + slopes_2[i - 1] / 2))
-        #         else:
-        #             second.append(0)
-        #
-        #     y.append(moving_average)
-        #     dy.append(first)
-        #     ddy.append(second)
         for mav in n:
             y.append(savitzky_golay(self.closes, mav + 4, 4))
             dy.append(savitzky_golay(self.closes, mav + 4, 4, 1))
@@ -158,32 +110,15 @@ class AlgoChart:
         return y, dy, ddy
 
     def buy_n_sell_lines(self, n, margin):
-        buy = []
-        sell = []
-        for i in range(n + 4, len(self.dates) - 1):
-            # if flat
+        buys = []
+        sells = []
+        for i in range(n, len(self.closes)):
             if 0 - margin <= self.mav_dy[n][i] <= 0 + margin:
-                # if up
                 if self.mav_ddy[n][i] > 0:
-                    buy.append(i)
+                    buys.append(i)
                 else:
-                    sell.append(i)
-        return buy, sell
-
-    def derivative_scale(self):
-        buys = self.buy_n_sell_lines(11, 0.5)[0]
-        sells = self.buy_n_sell_lines(7, 0.1)[1]
-
-        values = []
-        for i in range(len(self.closes)):
-            if i in buys:
-                values.append(3)
-            elif i in sells:
-                values.append(1)
-            else:
-                values.append(2)
-
-        return savitzky_golay(values, 11, 4)
+                    sells.append(i)
+        return buys, sells
 
     # TODO
     def combined_scales(self, n):

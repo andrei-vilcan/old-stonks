@@ -5,7 +5,7 @@ import numpy as np
 import math as m
 from math import factorial
 
-mav_n_s = [5, 7, 15, 21, 35, 49, 121]
+mav_n_s = [5, 7, 11, 15, 21, 35, 49, 121]
 
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
@@ -25,7 +25,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     m_ = np.linalg.pinv(b).A[deriv] * rate**deriv * factorial(deriv)
     # pad the signal at the extremes with
     # values taken from the signal itself
-    firstvals = y[0] - np.abs( y[1:half_window+1][::-1] - y[0] )
+    firstvals = y[0] - np.abs(y [1:half_window+1][::-1] - y[0] )
     lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
     return np.convolve( m_[::-1], y, mode='valid')
@@ -198,7 +198,7 @@ class Chart:
     def buy_n_sell_lines(self, n, margin):
         buys = []
         sells = []
-        for i in range(n, len(self.closes)):
+        for i in range(n, len(self.dates)):
             if 0 - margin <= self.mav_dy[n][i] <= 0 + margin:
                 if self.mav_ddy[n][i] > 0:
                     buys.append(i)
@@ -211,7 +211,7 @@ class Chart:
         values = []
         max_cluster_count = 1
 
-        clusters = cluster(self.buy_n_sell_lines(35, 3)[0])
+        clusters = self.cluster(self.buy_n_sell_lines(35, 3)[0])
         for i in range(35, len(self.closes)):
             for cluster_ in clusters:
                 if i in range(min(cluster_), max(cluster_)):
@@ -237,53 +237,58 @@ class Chart:
 
         return values
 
-    def derivative_scale_both_a(self):
+    def derivative_scale_both_a(self, m, n, margin):
 
         values = []
         max_buy_cluster_count = 1
         max_sell_cluster_count = 1
 
-        buy_clusters = self.cluster()
-        sell_clusters = self.cluster()
-        for i in range(11, len(self.closes)):
+        buy_clusters = cluster_1(self.buy_n_sell_lines(m, margin)[0], 1.05)
+        sell_clusters = cluster_1(self.buy_n_sell_lines(n, margin)[1], 1.05)
+        for i in range(min(m, n), len(self.closes)):
             buy_strength = 0
 
+            for cluster_ in buy_clusters:
+                if i in range(min(cluster_), max(cluster_)):
+                    buy_strength = i - min(cluster_)
+                    break
+                else:
+                    buy_strength = 0
 
-        for cluster_ in buy_clusters:
-            if i in range(min(cluster_), max(cluster_)):
-                buy_strength = i - min(cluster_)
-                break
+            if buy_strength > max_buy_cluster_count:
+                max_buy_cluster_count = buy_strength
+
+            sell_strength = 0
+            for cluster_ in sell_clusters:
+                if i in range(min(cluster_), max(cluster_)):
+                    sell_strength = - (i - min(cluster_))
+                    break
+                else:
+                    sell_strength = 0
+
+            if sell_strength < max_sell_cluster_count:
+                max_sell_cluster_count = sell_strength
+
+            ovr_strength = buy_strength + sell_strength
+
+            if ovr_strength > 0:
+                factor = ovr_strength / max_buy_cluster_count
+            elif ovr_strength < 0:
+                factor = ovr_strength / max_buy_cluster_count
             else:
-                buy_strength = 0
+                factor = 0
 
-        if buy_strength > max_buy_cluster_count:
-            max_buy_cluster_count = buy_strength
-
-        sell_strength = 0
-        for cluster_ in sell_clusters:
-            if i in range(min(cluster_), max(cluster_)):
-                sell_strength = - (i - min(cluster_))
-                break
+            if i == min(m, n):
+                values.append(0.5 + factor)
             else:
-                sell_strength = 0
-
-        if sell_strength < max_sell_cluster_count:
-            max_sell_cluster_count = sell_strength
-
-        ovr_strength = buy_strength + sell_strength
-
-        if ovr_strength > 0:
-            factor = ovr_strength / max_buy_cluster_count
-        elif ovr_strength < 0:
-            factor = ovr_strength / max_buy_cluster_count
-        else:
-            factor = 0
-
-        if i == 11:
-            values.append(0.5 + factor)
-        else:
-            values.append(values[-1] + factor)
+                values.append(values[-1] + factor)
         return values
+
+    def derivative_scale_2(self, n_b, n_s, m_b, m_s):
+        buy_lines = self.buy_n_sell_lines(n_b, m_b)
+        sell_lines = self.buy_n_sell_lines(n_s, m_s)
+        buy_groups = group_lines(buy_lines)
+        sell_groups = group_lines(sell_lines)
 
     # TODO
     def combined_scales(self):

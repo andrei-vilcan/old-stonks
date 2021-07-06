@@ -1,35 +1,45 @@
 from stock import Stock
 from algochart import AlgoChart
 
-
 tesla = Stock('TSLA')
 stock_list = [tesla]
 
 
-def zero():
-    for stock in stock_list:
-
-        hourly = stock.charts['1h']
-        daily = stock.charts['1d']
-        weekly = stock.charts['1wk']
-
-        for hour in range(168, len(hourly)):
-            hourly_data = hourly.ticker, hourly.period, hourly.timeframe, hourly.dates[:hour], hourly.opens[:hour], hourly.closes[:hour], hourly.highs[:hour], hourly.lows[:hour]
-            one(AlgoChart(hourly_data), hour)
+def one(stock):
+    hourly = stock.charts['1h']
+    daily = stock.charts['1d']
+    weekly = stock.charts['1wk']
 
 
+    def get_buy_sell_amounts(chart, margin):
+        buy_amount = 0
+        sell_amount = 0
 
+        if chart.buy_n_sell_lines[-1] == len(chart.dates) - 1:
+            buy_amount += 1
+            if chart.ma_scale()[-1] > 1 - margin:
+                buy_amount += 1
+            if chart.horizontal_scale()[-1] > 1 - margin:
+                buy_amount += 1
+            if buy_amount == 3:
+                buy_amount += 1
 
+        elif chart.buy_n_sell_lines[-1] == len(chart.dates) - 1:
+            sell_amount += 1
+            if chart.ma_scale()[-1] < margin:
+                sell_amount += 1
+            if chart.horizontal_scale()[-1] < margin:
+                sell_amount += 1
+            if sell_amount == 3:
+                sell_amount += 1
 
+        else:
+            if chart.combined_scales()[-1] > 1 - margin:
+                buy_amount += 2
+            elif chart.combined_scales()[-1] < margin:
+                sell_amount += 2
 
-            for day in range(7, len(daily)):
-                daily_data = daily.ticker, daily.period, daily.timeframe, daily.dates[:hour], daily.opens[:hour], daily.closes[:hour], daily.highs[:hour], daily.lows[:hour]
-                one(AlgoChart(daily_data), day)
+        return buy_amount, sell_amount
 
-                for week in range(1, len(weekly)):
-                    weekly_data = weekly.ticker, weekly.period, weekly.timeframe, weekly.dates[:hour], weekly.opens[:hour], weekly.closes[:hour], weekly.highs[:hour], weekly.lows[:hour]
-                    one(AlgoChart(weekly_data), week)
+    buy, sell = get_buy_sell_amounts(hourly, 0.1)
 
-
-def one(chart, limit):
-    chart.evaluate()
