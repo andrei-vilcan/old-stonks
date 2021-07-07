@@ -50,16 +50,26 @@ class Stock:
     ticker = str
     charts: dict
 
-    def __init__(self, ticker: str):
-        self.period = '30d'
+    def __init__(self, ticker: str, period=None, timeframes=None):
+        if period:
+            self.period = period
+        else:
+            self.period = '180d'
         self.ticker = ticker
         self.charts = {}
         """
         Charts store daily candles, and lines
         - add moving averages and any other ideas for indicator creation
         """
-        for timeframe in ['30m', '1h', '1d', '1wk']:
-            self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
+        if timeframes:
+            if type(timeframes) == list:
+                for timeframe in timeframes:
+                    self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
+            elif type(timeframes) == str:
+                self.charts[timeframes] = Chart(self.ticker, self.period, timeframes)
+        else:
+            for timeframe in ['1h', '1d', '1wk', '1mo']:
+                self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
 
         """Obtain optimized levels"""
         # self.lines = optimize_levels(weekly, daily, hourly?)

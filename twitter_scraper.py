@@ -11,7 +11,6 @@ my_password = 'matt101010' # Use yall own login info if we end up using this on 
 my_username_or_email = 'mattanatorisms@gmail.com'
 
 """Dictionary of scraped tickers"""
-tickers = {}
 posts = []
 
 """Load Functions"""
@@ -103,6 +102,8 @@ def getTickers():
 
 ### Running Bot ###
 
+
+tickers = {}
 """Open Chrome"""
 driver = Chrome('/usr/local/bin/chromedriver')
 driver.get('http://twitter.com/login')

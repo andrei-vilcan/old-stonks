@@ -1,43 +1,50 @@
 from stock import Stock
+from trading_bot import Bot
+import schedule, time
 import matplotlib.pyplot as plt
-from reddit_scraper import tickers
-
-stonks = []
-
-"""Remove '$' from tickers, add to stocks"""
-for k,v in tickers.items():
-    if v > 1 and '$' in str(k):
-        stonks.append(k.replace('$',''))
-# stonks = {k: v for k, v in sorted(tickers.items(), key=lambda item: item[1], reversed=True)} if stonk is dic
-
-stonk_ratings = {}
-
-"""Iterate through stocks and find values for buy/sell signal"""
-for stonk in stonks:
-    try:
-        """Define Parameters"""
-        stock = Stock(stonk)
-        colours = stock.charts['1d'].combined_scales()
-        """
-        Iterate through stocks (from present to past), find a 'set up' 
-        a set up being once a stock has moved above resistance and is coming 
-        back into it to test it as support
-        """
-        stonk_ratings[stock.ticker] = colours[-1]
-    except:
-        pass
-
-"""sort setups from small to large to find best buy"""
-buys = {k: v for k, v in sorted(stonk_ratings.items(), key=lambda item: item[1])}
-
-"""print stonks w scale"""
 cm = plt.cm.get_cmap('RdYlGn')
-fig, ax = plt.subplots(3)
-iter = 0
-for stonk in list(buys.keys())[-3:]:
-    stock = Stock(stonk)
-    closes = list(stock.charts['1d'].closes)
-    colours = stock.charts['1d'].combined_scales()
-    ax[iter].scatter(x=range(len(closes)), y=closes, c=colours, cmap=cm)
-    iter += 1
-plt.show()
+from reddit_scraper import scrape_reddit
+# from twitter_scraper import scrape_twitter
+
+"""Params"""
+period = '30d'
+timeframe = '30m'
+current_orders = {}
+
+tickers = ['tsla', 'amd', 'nvda', 'aapl', 'msft', 'cni', 'ko', 'amc', 'td', 'crsp', 'spce', '']
+stocks = [Stock(ticker, period, timeframe) for ticker in tickers]
+
+def scrape_stocks(p=period, t=timeframe):
+    stocks = scrape_reddit()
+    for k,v in stocks.items():
+        
+
+
+def get_setups(stocks, t=timeframe):
+    setups = []
+    for stock in stocks:
+        try:
+            colours = list(stock.charts[t].combined_scales())
+            if colours[-2] <= 0.55:
+                if colours[-1] >= 0.55:
+                    setups.append(stock)
+                    print(stock)
+        except:
+            pass
+    return setups
+
+
+def graph_chart(stock, t=timeframe):
+    prices = list(stock.charts[t].closes)
+    colours = list(stock.charts[t].combined_scales())
+    plt.scatter(x=range(len(prices)), y=prices, c=colours, cmap=cm)
+    plt.show()
+
+
+schedule.every().day.at('8:30').do(scrape_stocks)
+
+
+
+# while True:
+#     schedule.run_pending()
+#     time.sleep(1)

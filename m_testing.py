@@ -4,12 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 cm = plt.cm.get_cmap('RdYlGn')
-tickers = ['gme']
+tickers = ['amd']
 total_gains = []
 
 for ticker in tickers:
     try:
-        stock = Stock(ticker)
+
+        stock = Stock(ticker, period='7d', timeframes='30m')
         prices = list(stock.charts['30m'].closes)
         colours = list(stock.charts['30m'].combined_scales())
 
@@ -23,7 +24,7 @@ for ticker in tickers:
         for i in range(len(prices)):
             if not inTrade:
                 # Enter trade if green enough, record entry price
-                if colours[i] > 0.50:
+                if colours[i] > 0.55:
                     entry_point = prices[i]
                     plt.axvline(x=i, color='g')
                     inTrade = True

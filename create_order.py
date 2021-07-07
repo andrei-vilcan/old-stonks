@@ -45,8 +45,8 @@ def create_order(order_type, quantity, action):
     return order
 
 # Get ticker from scraper and stock data, and set it to ticker
-ticker = 'VST'
-number_of_shares = 10
+ticker = 'AAPL'
+number_of_shares = 1000
 
 """Create and send an order"""
 if __name__ == "__main__":
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     # (The clientId is chosen by us and we will need
     # separate IDs for both the execution connection and
     # market data connection)
-    tws_conn = Connection.create(port=7496, clientId=100)
+    tws_conn = Connection.create(port=7497, clientId=100)
     tws_conn.connect()
 
     # Assign the error handling function defined above
