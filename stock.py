@@ -98,6 +98,10 @@ class Stock:
     def price(self):
         return self.charts['1h'].current_price
 
+    def update(self):
+        for chart in self.charts.values():
+            chart.update()
+
 
 class Chart:
 
@@ -127,6 +131,29 @@ class Chart:
             return get_data(self.ticker, self.period, self.timeframe)
         else:
             return get_data(self.ticker, self.period, timeframe).dropna()
+
+    def update(self):
+        if self.ticker == '30m':
+            period = '1h'
+        elif self.ticker == '1h':
+            period = '2h'
+        elif self.ticker == '1d':
+            period = '2d'
+        elif self.ticker == '1wk':
+            period = '2wk'
+        else:
+            # fuck
+            period = 0
+        data = get_data(self.ticker, '2wk', self.timeframe)
+        dates = data.index.tolist()
+        for i in range(len(dates)):
+            if not dates[i] in self.dates:
+                self.dates.append(dates[i])
+                self.opens.append(data['Open'])
+                self.closes.append(data['Close'])
+                self.highs.append(data['High'])
+                self.lows.append(data['Low'])
+                self.current_price = self.closes[-1]
 
     def getLevels(self):
 
