@@ -88,6 +88,10 @@ class Stock:
     def price(self):
         return self.charts['1h'].current_price
 
+    def update(self):
+        for chart in self.charts.values():
+            chart.update()
+
 
 class Chart:
 
@@ -117,6 +121,30 @@ class Chart:
             return get_data(self.ticker, self.period, self.timeframe)
         else:
             return get_data(self.ticker, self.period, timeframe).dropna()
+
+    def update(self):
+        if self.ticker == '30m':
+            period = '1h'
+        elif self.ticker == '1h':
+            period = '2h'
+        elif self.ticker == '1d':
+            period = '2d'
+        elif self.ticker == '1wk':
+            period = '2wk'
+        else:
+            # fuck
+            period = 0
+        data = get_data(self.ticker, '2wk', self.timeframe)
+        dates = data.index.tolist()
+        for i in range(len(dates)):
+            if not dates[i] in self.dates:
+                self.dates.append(dates[i])
+                self.opens.append(data['Open'])
+                self.closes.append(data['Close'])
+                self.highs.append(data['High'])
+                self.lows.append(data['Low'])
+                self.current_price = self.closes[-1]
+
 
     def getLevels(self):
 
@@ -205,84 +233,6 @@ class Chart:
                 else:
                     sells.append(i)
         return buys, sells
-
-    def derivative_scale(self):
-
-        values = []
-        max_cluster_count = 1
-
-        clusters = self.cluster(self.buy_n_sell_lines(35, 3)[0])
-        for i in range(35, len(self.closes)):
-            for cluster_ in clusters:
-                if i in range(min(cluster_), max(cluster_)):
-                    strength = i - min(cluster_)
-                    break
-                else:
-                    strength = 0
-
-            if strength > max_cluster_count:
-                max_cluster_count = strength
-
-            factor = strength / max_cluster_count
-
-            if i == 35:
-                values.append(0.5 + (factor * 0.5))
-            else:
-                if strength == 0:
-                    values.append(values[-1] - values[-1]/35)
-                else:
-                    values.append(values[-1] + factor)
-
-        # values = savitzky_golay(values, 9, 3)
-
-        return values
-
-    def derivative_scale_both_a(self, m, n, margin):
-
-        values = []
-        max_buy_cluster_count = 1
-        max_sell_cluster_count = 1
-
-        buy_clusters = cluster_1(self.buy_n_sell_lines(m, margin)[0], 1.05)
-        sell_clusters = cluster_1(self.buy_n_sell_lines(n, margin)[1], 1.05)
-        for i in range(min(m, n), len(self.closes)):
-            buy_strength = 0
-
-            for cluster_ in buy_clusters:
-                if i in range(min(cluster_), max(cluster_)):
-                    buy_strength = i - min(cluster_)
-                    break
-                else:
-                    buy_strength = 0
-
-            if buy_strength > max_buy_cluster_count:
-                max_buy_cluster_count = buy_strength
-
-            sell_strength = 0
-            for cluster_ in sell_clusters:
-                if i in range(min(cluster_), max(cluster_)):
-                    sell_strength = - (i - min(cluster_))
-                    break
-                else:
-                    sell_strength = 0
-
-            if sell_strength < max_sell_cluster_count:
-                max_sell_cluster_count = sell_strength
-
-            ovr_strength = buy_strength + sell_strength
-
-            if ovr_strength > 0:
-                factor = ovr_strength / max_buy_cluster_count
-            elif ovr_strength < 0:
-                factor = ovr_strength / max_buy_cluster_count
-            else:
-                factor = 0
-
-            if i == min(m, n):
-                values.append(0.5 + factor)
-            else:
-                values.append(values[-1] + factor)
-        return values
 
     def derivative_scale_2(self, n_b, n_s, m_b, m_s):
         buy_lines = self.buy_n_sell_lines(n_b, m_b)
