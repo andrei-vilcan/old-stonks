@@ -1,11 +1,8 @@
 from stock import Stock
 from algochart import AlgoChart
 
-tesla = Stock('TSLA')
-stock_list = [tesla]
 
-
-def one(stock):
+def garb(stock):
     hourly = stock.charts['1h']
     daily = stock.charts['1d']
     weekly = stock.charts['1wk']
@@ -41,5 +38,7 @@ def one(stock):
 
         return buy_amount, sell_amount
 
-    buy, sell = get_buy_sell_amounts(hourly, 0.1)
+    buy, sell = get_buy_sell_amounts(hourly, 0.55)
+
+def one()
 
