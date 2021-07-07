@@ -11,13 +11,13 @@ period = '30d'
 timeframe = '30m'
 current_orders = {}
 
-tickers = ['tsla', 'amd', 'nvda', 'aapl', 'msft', 'cni', 'ko', 'amc', 'td', 'crsp', 'spce', '']
+tickers = ['tsla', 'amd', 'nvda', 'aapl', 'msft', 'cni', 'ko', 'amc', 'td', 'crsp', 'spce']
 stocks = [Stock(ticker, period, timeframe) for ticker in tickers]
 
 def scrape_stocks(p=period, t=timeframe):
     stocks = scrape_reddit()
-    for k,v in stocks.items():
-        
+    # for k,v in stocks.items():
+
 
 
 def get_setups(stocks, t=timeframe):
@@ -41,7 +41,8 @@ def graph_chart(stock, t=timeframe):
     plt.show()
 
 
-schedule.every().day.at('8:30').do(scrape_stocks)
+graph_chart(stocks[0])
+# schedule.every().day.at('8:30').do(scrape_stocks)
 
 
 
