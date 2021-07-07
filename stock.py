@@ -44,9 +44,7 @@ def chart_weight_formula(bias):
 
 
 class Stock:
-    """
-    Stock
-    """
+
     ticker = str
     charts: dict
 

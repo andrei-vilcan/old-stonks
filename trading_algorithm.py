@@ -1,4 +1,4 @@
 from stock import Stock
 
-def one():
-
+def zero():
+    
