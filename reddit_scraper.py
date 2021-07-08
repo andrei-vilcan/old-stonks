@@ -15,7 +15,7 @@ def scrape_reddit():
 
 
     """Retreive tickers mentioned that start with a '$' (e.g. $VST)"""
-    limit = 2
+    limit = 5
     for subreddit in subreddits:
         for post in r.subreddit(subreddit).hot(limit=limit):
             for comments in post.comments:

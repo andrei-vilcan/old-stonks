@@ -1,51 +1,76 @@
 from stock import Stock
 from trading_bot import Bot
-import schedule, time
+import numpy.random as random
+import schedule
+import time
 import matplotlib.pyplot as plt
-cm = plt.cm.get_cmap('RdYlGn')
 from reddit_scraper import scrape_reddit
-# from twitter_scraper import scrape_twitter
-
-"""Params"""
-period = '30d'
-timeframe = '30m'
-current_orders = {}
-
-tickers = ['tsla', 'amd', 'nvda', 'aapl', 'msft', 'cni', 'ko', 'amc', 'td', 'crsp', 'spce']
-stocks = [Stock(ticker, period, timeframe) for ticker in tickers]
-
-def scrape_stocks(p=period, t=timeframe):
-    stocks = scrape_reddit()
-    # for k,v in stocks.items():
+cm = plt.cm.get_cmap('RdYlGn')
 
 
-
-def get_setups(stocks, t=timeframe):
-    setups = []
-    for stock in stocks:
-        try:
-            colours = list(stock.charts[t].combined_scales())
-            if colours[-2] <= 0.55:
-                if colours[-1] >= 0.55:
-                    setups.append(stock)
-                    print(stock)
-        except:
-            pass
-    return setups
+current_trades = [] # list of stock objects
+quantity = 100
 
 
-def graph_chart(stock, t=timeframe):
-    prices = list(stock.charts[t].closes)
-    colours = list(stock.charts[t].combined_scales())
-    plt.scatter(x=range(len(prices)), y=prices, c=colours, cmap=cm)
-    plt.show()
+class Algo:
+    def __init__(self):
+        """Params"""
+        self.period = '20d'
+        self.timeframe = '5m'
+        self.quantity = 100
+
+        self.tickers = ['tsla', 'amd', 'nvda', 'aapl', 'msft', 'cni', 'ko', 'amc', 'td', 'crsp', 'spce', 'sq', 'pypl']
+        self.stocks = [Stock(ticker, self.period, self.timeframe) for ticker in self.tickers]
+        self.setups = self.get_setups()
+        self.open_trades = []
+
+    def scrape_stocks(self):
+        stocks = scrape_reddit()
+        sorted_stocks = dict(sorted(stocks.items(), key=lambda item: item[1], reverse=True))
+        stocks = {}
+        for k, v in list(sorted_stocks.items()):
+            stocks[k.upper().replace('$', '')] = v
+        # maybe append if not already in
+        return stocks
+
+    def get_setups(self):
+        setups = []
+        for stock in self.stocks:
+            try:
+                colours = list(stock.charts[self.timeframe].combined_scales())
+                if colours[-2] <= 0.55:
+                    if colours[-1] >= 0.55:
+                        setups.append(stock)
+            except:
+                pass
+        return setups
+
+    def manage_trades(self):
+        """Find/trade any settups at current candle"""
+        print('Managing Trades...')
+        for stock in self.get_setups():
+            if stock not in self.open_trades:
+                print('Buying: ' + stock.ticker)
+                order_id = stock.charts[self.timeframe].dates[-1].time().hour + random.random(9999)
+                Bot(stock.ticker, 'BUY', self.quantity, order_id)
+                self.open_trades.append(stock)
+
+        """Sell any stocks that are in sell zone"""
+        for stock in self.open_trades:
+            colours = list(stock.charts[self.timeframe].combined_scales())
+            if list(colours)[-1] <= 0.45:
+                order_id = stock.charts[self.timeframe].dates[-1].time().hour + random.randint(9999)
+                print('Selling: ' + stock.ticker)
+                Bot(stock.ticker, 'SELL', self.quantity, order_id)
+                self.open_trades.remove(stock)
 
 
-graph_chart(stocks[0])
-# schedule.every().day.at('8:30').do(scrape_stocks)
+"""Run Bot"""
+algo = Algo()
 
+schedule.every(5).minutes.unitl('1')
+schedule.every(5).minutes.until('16:00').do(algo.manage_trades)
 
-
-# while True:
-#     schedule.run_pending()
-#     time.sleep(1)
+while True:
+    schedule.run_pending()
+    time.sleep(1)

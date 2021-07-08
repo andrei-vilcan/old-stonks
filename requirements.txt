@@ -1,5 +1,3 @@
-ibapi
-django-scheduler
 pyclustering
 scikit-learn
 certifi==2021.5.30
