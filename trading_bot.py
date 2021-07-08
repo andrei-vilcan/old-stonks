@@ -7,15 +7,17 @@ import threading
 import time
 orderId = 1
 
+
 class IBApi(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, self)
+
     def nextValidId(self, nextOrderId:int):
         global orderId
         orderId = nextOrderId
 
 
-class Bot():
+class Bot:
     ib = None
 
     def __init__(self, symbol, action: str, quantity: int, order_id: int):
@@ -26,8 +28,8 @@ class Bot():
         time.sleep(1)
 
         self.symbol = symbol
-        self.contract.symbol = symbol.upper()
         self.contract = Contract()
+        self.contract.symbol = symbol.upper()
         self.contract.secType = 'STK'
         self.contract.exchange = 'SMART'
         self.contract.primaryExchange = 'ISLAND'
@@ -39,6 +41,8 @@ class Bot():
         order.action = action
         order.totalQuantity = quantity
         self.ib.placeOrder(order_id, self.contract, order)
+
+        self.ib.disconnect()
 
     def runLoop(self):
         self.ib.run()

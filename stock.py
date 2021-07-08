@@ -5,7 +5,7 @@ import numpy as np
 import math as m
 from math import factorial
 
-mav_n_s = [5, 7, 11, 15, 21, 35, 49, 121]
+mav_n_s = [5, 7, 9, 11, 15, 21, 35, 49, 121]
 
 
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
@@ -43,6 +43,21 @@ def chart_weight_formula(bias):
     return x
 
 
+def group(lst):
+    groups = []
+    group_ = []
+    for i in range(len(lst)):
+        if not group_:
+            group_.append(lst[i])
+        else:
+            if lst[i] == group_[-1] + 1:
+                group_.append(lst[i])
+            else:
+                groups.append(group_)
+                group_ = []
+    return groups
+
+
 class Stock:
 
     ticker = str
@@ -64,9 +79,13 @@ class Stock:
                 for timeframe in timeframes:
                     self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
             elif type(timeframes) == str:
+                if timeframes == '5m':
+                    self.period = '1wk'
+                if timeframes == '1m':
+                    self.period = '1wk'
                 self.charts[timeframes] = Chart(self.ticker, self.period, timeframes)
         else:
-            for timeframe in ['1h', '1d', '1wk', '1mo']:
+            for timeframe in ['1h', '1d', '1wk']:
                 self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
 
         """Obtain optimized levels"""
@@ -83,22 +102,34 @@ class Stock:
             return self.charts['1d']
         if time_frame == '1d':
             return self.charts['1d']
-        elif time_frame == '1wk':
+        if time_frame == '1wk':
             return self.charts['1wk']
+        elif time_frame == '1mo':
+            return self.charts['1mo']
 
-    def add_time_frame(self, time_frame_s):
-        if time_frame_s.isinstance(str):
-            self.charts[time_frame_s] = Chart(self.ticker, self.period, time_frame_s)
+    def add_time_frame(self, period_s, time_frame_s):
+        if isinstance(time_frame_s, str):
+            self.charts[time_frame_s] = Chart(self.ticker, period_s, time_frame_s)
         else:
-            for thing in time_frame_s:
-                self.charts[thing] = Chart(self.ticker, self.period, thing)
+            for i in range(len(time_frame_s)):
+                self.charts[time_frame_s[i]] = Chart(self.ticker, period_s[i], time_frame_s[i])
 
     def price(self):
         return self.charts['1h'].current_price
 
-    def update(self):
-        for chart in self.charts.values():
-            chart.update()
+    def update(self, chart_s=None):
+        if chart_s:
+            if isinstance(chart_s, list):
+                lst = []
+                for chart in chart_s:
+                    lst.append(self.charts[chart].update())
+            else:
+                lst = [self.charts[chart_s].update()]
+        else:
+            lst = []
+            for chart in self.charts.values():
+                lst.append(chart.update())
+        return lst
 
 
 class Chart:
@@ -131,27 +162,34 @@ class Chart:
             return get_data(self.ticker, self.period, timeframe).dropna()
 
     def update(self):
-        if self.ticker == '30m':
-            period = '1h'
-        elif self.ticker == '1h':
+        if self.ticker == '1h':
             period = '2h'
         elif self.ticker == '1d':
             period = '2d'
         elif self.ticker == '1wk':
             period = '2wk'
+        elif self.ticker == '1mo':
+            period = '2mo'
         else:
             # fuck
             period = 0
-        data = get_data(self.ticker, '2wk', self.timeframe)
+
+        flag = 0
+        data = get_data(self.ticker, period, self.timeframe)
         dates = data.index.tolist()
         for i in range(len(dates)):
             if not dates[i] in self.dates:
+                flag += 1
                 self.dates.append(dates[i])
                 self.opens.append(data['Open'])
                 self.closes.append(data['Close'])
                 self.highs.append(data['High'])
                 self.lows.append(data['Low'])
                 self.current_price = self.closes[-1]
+        if flag > 0:
+            return True
+        else:
+            return False
 
     def getLevels(self):
 
@@ -230,7 +268,7 @@ class Chart:
             ddy.append(savitzky_golay(self.closes, mav, 3, 2))
         return y, dy, ddy
 
-    def buy_n_sell_lines(self, n, margin):
+    def buy_n_sell_lines(self, n, margin, grouped=False):
         buys = []
         sells = []
         for i in range(n, len(self.dates)):
@@ -239,93 +277,15 @@ class Chart:
                     buys.append(i)
                 else:
                     sells.append(i)
-        return buys, sells
-
-    def derivative_scale(self):
-
-        values = []
-        max_cluster_count = 1
-
-        clusters = self.cluster(self.buy_n_sell_lines(35, 3)[0])
-        for i in range(35, len(self.closes)):
-            for cluster_ in clusters:
-                if i in range(min(cluster_), max(cluster_)):
-                    strength = i - min(cluster_)
-                    break
-                else:
-                    strength = 0
-
-            if strength > max_cluster_count:
-                max_cluster_count = strength
-
-            factor = strength / max_cluster_count
-
-            if i == 35:
-                values.append(0.5 + (factor * 0.5))
-            else:
-                if strength == 0:
-                    values.append(values[-1] - values[-1]/35)
-                else:
-                    values.append(values[-1] + factor)
-
-        # values = savitzky_golay(values, 9, 3)
-
-        return values
-
-    def derivative_scale_both_a(self, m, n, margin):
-
-        values = []
-        max_buy_cluster_count = 1
-        max_sell_cluster_count = 1
-
-        buy_clusters = cluster_1(self.buy_n_sell_lines(m, margin)[0], 1.05)
-        sell_clusters = cluster_1(self.buy_n_sell_lines(n, margin)[1], 1.05)
-        for i in range(min(m, n), len(self.closes)):
-            buy_strength = 0
-
-            for cluster_ in buy_clusters:
-                if i in range(min(cluster_), max(cluster_)):
-                    buy_strength = i - min(cluster_)
-                    break
-                else:
-                    buy_strength = 0
-
-            if buy_strength > max_buy_cluster_count:
-                max_buy_cluster_count = buy_strength
-
-            sell_strength = 0
-            for cluster_ in sell_clusters:
-                if i in range(min(cluster_), max(cluster_)):
-                    sell_strength = - (i - min(cluster_))
-                    break
-                else:
-                    sell_strength = 0
-
-            if sell_strength < max_sell_cluster_count:
-                max_sell_cluster_count = sell_strength
-
-            ovr_strength = buy_strength + sell_strength
-
-            if ovr_strength > 0:
-                factor = ovr_strength / max_buy_cluster_count
-            elif ovr_strength < 0:
-                factor = ovr_strength / max_buy_cluster_count
-            else:
-                factor = 0
-
-            if i == min(m, n):
-                values.append(0.5 + factor)
-            else:
-                values.append(values[-1] + factor)
-        return values
+        if not grouped:
+            return buys, sells
+        else:
+            return group(buys), group(sells)
 
     def derivative_scale_2(self, n_b, n_s, m_b, m_s):
-        buy_lines = self.buy_n_sell_lines(n_b, m_b)
-        sell_lines = self.buy_n_sell_lines(n_s, m_s)
-        buy_groups = group_lines(buy_lines)
-        sell_groups = group_lines(sell_lines)
+        buy_groups = self.buy_n_sell_lines(n_b, m_b, True)
+        sell_groups = self.buy_n_sell_lines(n_s, m_s, True)
 
-    # TODO
     def combined_scales(self):
         """n = mav"""
         scale = []
@@ -378,9 +338,6 @@ class Chart:
         scale = savitzky_golay(np.array(scale), 7, 3)
         return scale
 
-    def evaluate(self):
-        return [1]
-
     def cluster(self, gap=1.02):
         # lines: list of indexes of significant points
         line_clusters = []
@@ -416,6 +373,3 @@ class Chart:
         else:
             weight = 0
         return weight
-
-# s = Stock('TSLA')
-# print(s.derivative_scale())
