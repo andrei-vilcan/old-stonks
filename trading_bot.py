@@ -3,43 +3,52 @@ from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
 from ibapi.order import Order
+import numpy.random as random
 import threading
 import time
-orderId = 1
+
 
 class IBApi(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, self)
-    def nextValidId(self, nextOrderId:int):
-        global orderId
-        orderId = nextOrderId
 
 
 class Bot():
     ib = None
 
-    def __init__(self, symbol, action: str, quantity: int, order_id: int):
-        self. ib = IBApi()
+    def __init__(self, ticker, action: str, quantity: int, orderId):
+        self.ticker = ticker
+        self.action = action
+        self.quantity = quantity
+        self.orderId = orderId
+
+        self.ib = IBApi()
         self.ib.connect('127.0.0.1', 7497, 1)
         ib_thread = threading.Thread(target=self.runLoop, daemon=True)
         ib_thread.start()
         time.sleep(1)
 
-        self.symbol = symbol
-        self.contract = Contract()
-        self.contract.symbol = symbol.upper()
-        self.contract.secType = 'STK'
-        self.contract.exchange = 'SMART'
-        self.contract.primaryExchange = 'ISLAND'
-        self.contract.currency = 'USD'
+        self.ib.placeOrder(self.orderId, self.make_contract(), self.make_order())
+        time.sleep(1)
+        self.ib.disconnect()
 
-        # check for open orders before making one
+    def make_contract(self):
+        contract = Contract()
+        contract.symbol = self.ticker.upper()
+        contract.secType = 'STK'
+        contract.exchange = 'SMART'
+        contract.primaryExchange = 'ISLAND'
+        contract.currency = 'USD'
+        time.sleep(1)
+        return contract
+
+    def make_order(self):
         order = Order()
         order.orderType = 'MKT'
-        order.action = action
-        order.totalQuantity = quantity
-        self.ib.placeOrder(order_id, self.contract, order)
-        self.ib.disconnect()
+        order.action = self.action
+        order.totalQuantity = self.quantity
+        return order
+
 
     def runLoop(self):
         self.ib.run()

@@ -1,5 +1,4 @@
 from stock import Stock
-from trading_bot import Bot
 import schedule
 import time
 import matplotlib.pyplot as plt
@@ -9,6 +8,8 @@ cm = plt.cm.get_cmap('RdYlGn')
 
 current_trades = [] # list of stock objects
 quantity = 100
+# completed_trades = {'tsla': [], 'amd': [], 'nvda': [], 'aapl': [], 'msft': [], 'cni': [], 'ko': [], 'amc': [], 'crsp': [], 'spce': [], 'sq': [], 'pypl': [], 'pins': []}
+completed_trades = {'xrp-usd': [], 'btc-usd': [], 'eth-usd': [], 'ada-usd': [], 'xlm-usd': [], 'bnb-usd': [], 'eos-usd': [], 'bch-usd': [], 'hex-usd': [], 'doge-usd': [], 'ltc-usd': []}
 
 
 class Algo:
@@ -18,11 +19,12 @@ class Algo:
         # self.timeframe = '2m'
         self.quantity = 100
         self.orderId = 1
-        #self.tickers = ['tsla', 'amd', 'nvda', 'aapl', 'msft', 'cni', 'ko', 'amc', 'crsp', 'spce', 'sq', 'pypl']
-        self.tickers = ['tsla', 'amd', 'amc', 'crsp', 'spce', 'sq', 'pypl']
+        # self.tickers = ['tsla', 'amd', 'nvda', 'aapl', 'msft', 'cni', 'ko', 'amc', 'crsp', 'spce', 'sq', 'pypl', 'pins']
+        self.tickers = ['xrp-usd', 'btc-usd', 'eth-usd', 'ada-usd', 'xlm-usd', 'bnb-usd', 'eos-usd', 'bch-usd', 'hex-usd', 'doge-usd', 'ltc-usd']
         self.stocks = []
         self.open_trades = []
         self.setups = []
+        self.trades = {}
 
     def scrape_stocks(self):
         stocks = scrape_reddit()
@@ -37,9 +39,9 @@ class Algo:
         stocks = []
         for ticker in self.tickers:
             try:
-                stocks.append(Stock(ticker))
-                time.sleep(3)
-                print('Grabbing info for ' + ticker)
+                print('\033[1;33;40m' + 'Grabbing info for ' + ticker)
+                stocks.append(Stock(ticker, '30m'))
+                time.sleep(1)
             except:
                 pass
 
@@ -47,19 +49,19 @@ class Algo:
 
     def get_setups(self):
         setups = []
-        print('Finding setups...')
+        print('\033[1;33;40m' + 'Finding setups...')
         self.create_stock_objs()
         for stock in self.stocks:
             try:
-                colours = list(stock.chart.combined_scales())
-                if colours[-2] <= 0.375 or colours[-3] <= 0.375:
-                    if colours[-1] >= 0.425:
-                        setups.append(stock)
-                        print('Setup found!: ' + stock.ticker.upper())
+                colours = list(stock.charts['30m'].combined_scales())
+                if colours[-1] >= 0.775:
+                    # use second last candle as this is called right after the candle is printed
+                    setups.append(stock)
+                    print('\033[1;32;40m' + 'Setup found!: ' + stock.ticker)
             except:
                 pass
         if len(setups) == 0:
-            print('No setups found.')
+            print('\033[1;31;40m' + 'No setups found.')
         return setups
 
     def manage_trades(self):
@@ -70,27 +72,34 @@ class Algo:
         if self.open_trades:
             for ticker in self.open_trades:
                 text = text + ticker + ' '
-        print(text)
+        print('\033[1;36;40m' + text)
 
-        print('Managing Trades...')
+        print('\033[1;35;40m' + 'Managing Trades...')
+        buys = []
         for stock in self.get_setups():
             if stock.ticker not in self.open_trades:
-                Bot(stock.ticker, 'BUY', self.quantity, self.orderId)
                 self.update_orderId()
                 self.open_trades.append(stock.ticker)
+                buys.append(stock.ticker)
+                self.trades[stock.ticker] = stock.price()
                 print('\033[1;32;40m' + 'Buying: ' + stock.ticker)
                 time.sleep(1)
 
         """Sell any stocks that are in sell zone"""
         for ticker in self.open_trades:
-            stock = Stock(ticker)
-            colours = stock.chart.combined_scales()
-            if list(colours)[-1] <= 0.375:
-                Bot(stock.ticker, 'SELL', self.quantity, self.orderId)
-                self.update_orderId()
-                self.open_trades.remove(stock.ticker)
-                print('\033[1;33;40m' + 'Selling: ' + stock.ticker)
-                time.sleep(1)
+            if ticker not in buys:
+                stock = Stock(ticker)
+                colours = list(stock.charts['30m'].combined_scales())
+                if colours[-1] <= 0.275:
+                    self.update_orderId()
+                    self.open_trades.remove(stock.ticker)
+                    percent_move = (stock.price() - self.trades[stock.ticker]) / self.trades[stock.ticker]
+                    completed_trades[stock.ticker].append(percent_move)
+                    print('\033[1;31;40m' + 'Selling: ' + stock.ticker)
+                    time.sleep(1)
+
+        print('\033[1;37;40m' + 'Completed Trades:')
+        print(completed_trades)
 
     def update_orderId(self):
         self.orderId += 1
@@ -100,17 +109,7 @@ class Algo:
 algo = Algo()
 
 schedule.every().hour.at(':00').do(algo.manage_trades)
-schedule.every().hour.at(':05').do(algo.manage_trades)
-schedule.every().hour.at(':10').do(algo.manage_trades)
-schedule.every().hour.at(':15').do(algo.manage_trades)
-schedule.every().hour.at(':20').do(algo.manage_trades)
-schedule.every().hour.at(':25').do(algo.manage_trades)
 schedule.every().hour.at(':30').do(algo.manage_trades)
-schedule.every().hour.at(':35').do(algo.manage_trades)
-schedule.every().hour.at(':40').do(algo.manage_trades)
-schedule.every().hour.at(':45').do(algo.manage_trades)
-schedule.every().hour.at(':50').do(algo.manage_trades)
-schedule.every().hour.at(':55').do(algo.manage_trades)
 
 
 while True:

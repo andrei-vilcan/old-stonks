@@ -1,7 +1,7 @@
 import operator
 
 
-def optimize_levels(chart, merge_levels=None, mingap=0.97, maxgap=1.05, trading_range=1.08):
+def optimize_levels(chart, merge_levels=None, mingap=0.95, maxgap=1.05, trading_range=1.07):
 
     """Define variables"""
     candles = chart.candles
@@ -56,7 +56,7 @@ def optimize_levels(chart, merge_levels=None, mingap=0.97, maxgap=1.05, trading_
         end_date = list(cluster.keys())[-1]
 
         # if there are closes within the cluster that exceed range, add the extremes as lines
-        for candle in candles:  # WAS SELF.CANDLES
+        for candle in candles:
             if start_date.timestamp() < candle.date.timestamp() < end_date.timestamp():
                 if candle.close > max_level or candle.open > max_level:
                     if candle.open > candle.close:

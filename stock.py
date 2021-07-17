@@ -1,10 +1,10 @@
+import warnings
 from candle import Candle
 from get_data import get_data
 from optimize_levels import optimize_levels
 import numpy as np
 import math as m
 from math import factorial
-
 mav_n_s = [5, 7, 11, 15, 21, 35, 49, 121]
 
 
@@ -25,6 +25,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     m_ = np.linalg.pinv(b).A[deriv] * rate**deriv * factorial(deriv)
     # pad the signal at the extremes with
     # values taken from the signal itself
+    warnings.filterwarnings('ignore')
     firstvals = y[0] - np.abs(y [1:half_window+1][::-1] - y[0] )
     lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
     y = np.concatenate((firstvals, y, lastvals))
@@ -50,62 +51,28 @@ class Stock:
     ticker = str
     charts: dict
 
-    def __init__(self, ticker: str, period=None, timeframes=None):
-        if period:
-            self.period = period
-        else:
-            self.period = '180d'
+    def __init__(self, ticker: str, timeframes='1d'):
         self.ticker = ticker
         self.charts = {}
-        """
-        Charts store daily candles, and lines
-        - add moving averages and any other ideas for indicator creation
-        """
         if timeframes:
             if type(timeframes) == list:
                 for timeframe in timeframes:
-                    self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
+                    self.charts[timeframe] = Chart(self.ticker, timeframe)
             elif type(timeframes) == str:
-                self.charts[timeframes] = Chart(self.ticker, self.period, timeframes)
-        else:
-            for timeframe in ['1h', '1d', '1wk', '1mo']:
-                self.charts[timeframe] = Chart(self.ticker, self.period, timeframe)
-
-        """Obtain optimized levels"""
-        # self.lines = optimize_levels(weekly, daily, hourly?)
+                self.charts[timeframes] = Chart(self.ticker, timeframes)
 
     def ticker(self):
-        return self.ticker
-
-    def charts(self, time_frame):
-        # if time_frame:
-        #     return self.charts
-        # else:
-        if time_frame == '1h':
-            return self.charts['1d']
-        if time_frame == '1d':
-            return self.charts['1d']
-        elif time_frame == '1wk':
-            return self.charts['1wk']
-
-    def add_time_frame(self, time_frame_s):
-        if time_frame_s.isinstance(str):
-            self.charts[time_frame_s] = Chart(self.ticker, self.period, time_frame_s)
-        else:
-            for thing in time_frame_s:
-                self.charts[thing] = Chart(self.ticker, self.period, thing)
+        return self.ticker.upper()
 
     def price(self):
-        return self.charts['1h'].current_price
+        return self.charts.values()[-1].current_price
 
 
 class Chart:
 
-    def __init__(self, ticker, period, timeframe):
+    def __init__(self, ticker, timeframe):
         self.ticker = ticker
-        self.period = period
         self.timeframe = timeframe
-
         data = self.getData()
         self.dates = data.index.tolist()
         self.opens = data['Open']
@@ -113,7 +80,6 @@ class Chart:
         self.highs = data['High']
         self.lows = data['Low']
         self.current_price = self.closes[-1]
-
         self.candles = []
         for i in range(len(self.dates)):
             self.candles.append(Candle(self.dates[i], self.opens[i], self.closes[i], self.highs[i], self.lows[i]))
@@ -122,11 +88,8 @@ class Chart:
 
         self.mav_y, self.mav_dy, self.mav_ddy = self.update_mavs()
 
-    def getData(self, timeframe=None):
-        if not timeframe:
-            return get_data(self.ticker, self.period, self.timeframe)
-        else:
-            return get_data(self.ticker, self.period, timeframe).dropna()
+    def getData(self):
+        return get_data(self.ticker, self.timeframe)
 
     def getLevels(self):
 
@@ -181,7 +144,6 @@ class Chart:
                     levels[self.candles[i].date] = self.candles[i].open
                 else:
                     levels[self.candles[i - 1].date] = self.candles[i - 1].close
-
         return levels
 
     def update_mavs(self):
@@ -252,12 +214,17 @@ class Chart:
     def combined_scales(self):
         """n = mav"""
         scale = []
-        for i in range(len(self.ma_scale())):
-            scale.append(self.horizontal_scale()[i] * 0.4 + self.ma_scale()[i] * 0.6)
-
+        horizontal_scale = self.horizontal_scale()
+        ma_scale = self.ma_scale()
+        for i in range(len(self.horizontal_scale())):
+            scale.append(horizontal_scale[i] * 0.6 + 0.4 * ma_scale[i])
         """Smoothen scale maybe"""
-        scale = savitzky_golay(scale, 9, 3)
+        # scale = savitzky_golay(scale, 5, 3)
         return scale
+
+    def optimized_levels(self):
+        levels = optimize_levels(self)
+        return levels
 
     def horizontal_scale(self):
         """
@@ -282,10 +249,16 @@ class Chart:
                     elif prices[n] > self.candles[i].close:
                         resistance = prices[n]
                         break
-            level = (self.candles[i].close - support) / (resistance - support)
-            scale.append(level)
-        smooth_scale = savitzky_golay(scale, 11, 4)
-        return smooth_scale
+            if resistance == 0:
+                if support == 0:
+                    level = 0.5
+                else:
+                    level = (self.candles[i].close - support) / support
+            else:
+                level = (self.candles[i].close - support) / (resistance - support)
+            scale.append(np.abs(level - 1))
+        # smooth_scale = savitzky_golay(scale, 5, 3)
+        return scale
 
     def ma_scale(self):
         scale = []
@@ -293,12 +266,12 @@ class Chart:
             if all(i >= 0 for i in [self.mav_dy[15][i], self.mav_dy[35][i], self.mav_dy[49][i], self.mav_dy[121][i]]):
                 scale.append(1)
             elif all(i >= 0 for i in [self.mav_dy[35][i], self.mav_dy[49][i], self.mav_dy[121][i]]):
-                scale.append(0.3)
+                scale.append(0.5)
             elif all(i >= 0 for i in [self.mav_dy[49][i], self.mav_dy[121][i]]):
-                scale.append(0.1)
+                scale.append(0.25)
             else:
                 scale.append(0)
-        scale = savitzky_golay(np.array(scale), 7, 3)
+        # scale = savitzky_golay(np.array(scale), 5, 3)
         return scale
 
     def evaluate(self):
@@ -339,6 +312,3 @@ class Chart:
         else:
             weight = 0
         return weight
-
-# s = Stock('TSLA')
-# print(s.derivative_scale())
