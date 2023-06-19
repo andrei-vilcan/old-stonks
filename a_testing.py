@@ -18,3 +18,4 @@ for x in stock.charts['1h'].buy_n_sell_lines(9, 0.33)[1]:
     ax2.axvline(x=x)
 
 plt.show()
+ 

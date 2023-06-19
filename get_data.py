@@ -7,3 +7,4 @@ def get_data(ticker_: str, period_: str, timeframe: str):
                            interval=timeframe,
                            auto_adjust=True)
     return stock_df
+

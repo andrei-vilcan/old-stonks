@@ -78,3 +78,4 @@ if __name__ == "__main__":
     tws_conn.placeOrder(order_id, contract, order)
 
     tws_conn.disconnect()
+    

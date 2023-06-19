@@ -41,3 +41,4 @@ class Candle:
 
     def low(self):
         return self.low
+    

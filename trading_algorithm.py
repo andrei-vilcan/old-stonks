@@ -88,3 +88,4 @@ schedule.every(5).minutes.do(zero(stock_list))
 while True:
     schedule.run_pending()
     time.sleep(1)
+

@@ -96,3 +96,4 @@ def optimize_levels(chart, merge_levels=None, mingap=0.97, maxgap=1.05, trading_
             previous_level = level
 
     return optimized_levels
+

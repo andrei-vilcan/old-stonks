@@ -342,3 +342,4 @@ class Chart:
 
 # s = Stock('TSLA')
 # print(s.derivative_scale())
+

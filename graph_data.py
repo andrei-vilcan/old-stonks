@@ -28,3 +28,4 @@ def graphData(stonk):
     mpf.plot(stock.charts['1d'].getData(), mav=(7, 14), hlines=lines, type='candle', style='yahoo')
 
 graphData("TSLA")
+

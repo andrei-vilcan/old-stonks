@@ -133,3 +133,4 @@ for i in range(number_of_reloads):
     getTickers()
     driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
     sleep(1)
+    

@@ -74,3 +74,4 @@ schedule.every(5).minutes.until('16:00').do(algo.manage_trades)
 while True:
     schedule.run_pending()
     time.sleep(1)
+    
